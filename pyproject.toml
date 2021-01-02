@@ -13,6 +13,8 @@ pytest = "^5.2"
 scapy = "^2.4.4"
 bandit = "^1.7.0"
 flake8 = "^3.8.4"
+pytest-mock = "^3.4.0"
+pytest-cov = "^2.10.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
