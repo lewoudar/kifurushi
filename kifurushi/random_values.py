@@ -48,9 +48,9 @@ def rand_string(length: int = None, characters: str = None) -> str:
 
     **Parameters:**
 
-    **length:** The length of the desired random string. If not given a random value will be
+    * **length:** The length of the desired random string. If not given a random value will be
     computed using `random.randint(20, 150)`.
-    **characters:** A string with characters that will be used to form the random
+    * **characters:** A string with characters that will be used to form the random
     string. If not given, defaults to `string.ascii_letters`.
     """
     if length is not None:
