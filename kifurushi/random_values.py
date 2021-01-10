@@ -1,45 +1,59 @@
 import random
 import string
 
+LEFT_BYTE = LEFT_SHORT = LEFT_INT = LEFT_LONG = 0
+RIGHT_BYTE = 2 ** 8 - 1
+RIGHT_SHORT = 2 ** 16 - 1
+RIGHT_INT = 2 ** 32 - 1
+RIGHT_LONG = 2 ** 64 - 1
+LEFT_SIGNED_BYTE = -2 ** 7
+LEFT_SIGNED_SHORT = -2 ** 15
+LEFT_SIGNED_INT = -2 ** 31
+LEFT_SIGNED_LONG = -2 ** 63
+RIGHT_SIGNED_BYTE = 2 ** 7 - 1
+RIGHT_SIGNED_SHORT = 2 ** 15 - 1
+RIGHT_SIGNED_INT = 2 ** 31 - 1
+RIGHT_SIGNED_LONG = 2 ** 63 - 1
+
 
 def rand_bytes():
     """Returns an unsigned random byte value"""
-    return random.randint(0, 2 ** 8 - 1)
+    return random.randint(LEFT_BYTE, RIGHT_BYTE)
 
 
 def rand_signed_bytes():
     """Returns a signed random byte value"""
-    return random.randint(-2 ** 7, 2 ** 7 - 1)
+    return random.randint(LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE)
 
 
 def rand_short():
     """Returns an unsigned random short value"""
-    return random.randint(0, 2 ** 16 - 1)
+    return random.randint(LEFT_SHORT, RIGHT_SHORT)
 
 
 def rand_signed_short():
     """Returns a signed random short value"""
-    return random.randint(-2 ** 15, 2 ** 15 - 1)
+    return random.randint(LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT)
 
 
 def rand_int():
     """Returns an unsigned random int value"""
-    return random.randint(0, 2 ** 32 - 1)
+    return random.randint(LEFT_INT, RIGHT_INT)
 
 
 def rand_signed_int():
     """Returns a signed random int value"""
-    return random.randint(-2 ** 31, 2 ** 31 - 1)
+    return random.randint(LEFT_SIGNED_INT, RIGHT_SIGNED_INT)
 
 
 def rand_long():
     """Returns an unsigned random long value"""
-    return random.randint(0, 2 ** 64 - 1)
+    return random.randint(LEFT_LONG, RIGHT_LONG)
 
 
 def rand_signed_long():
     """Returns a signed random int value"""
-    return random.randint(-2 ** 63, 2 ** 63 - 1)
+    return random.randint(LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)
 
 
 def rand_string(length: int = None, characters: str = None) -> str:

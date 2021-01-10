@@ -2,6 +2,7 @@ import attr
 import pytest
 
 from kifurushi.abc import Field
+from kifurushi import random_values
 
 
 @attr.s(repr=False)
@@ -69,14 +70,14 @@ class TestFieldClass:
     # tests random_value method
 
     @pytest.mark.parametrize(('_format', 'left', 'right'), [
-        ('b', -2 ** 7, 2 ** 7 - 1),
-        ('B', 0, 2 ** 8 - 1),
-        ('h', -2 ** 15, 2 ** 15 - 1),
-        ('H', 0, 2 ** 16 - 1),
-        ('i', -2 ** 31, 2 ** 31 - 1),
-        ('I', 0, 2 ** 32 - 1),
-        ('q', -2 ** 63, 2 ** 63 - 1),
-        ('Q', 0, 2 ** 64 - 1)
+        ('b', random_values.LEFT_SIGNED_BYTE, random_values.RIGHT_SIGNED_BYTE),
+        ('B', random_values.LEFT_BYTE, random_values.RIGHT_BYTE),
+        ('h', random_values.LEFT_SIGNED_SHORT, random_values.RIGHT_SIGNED_SHORT),
+        ('H', random_values.LEFT_SHORT, random_values.RIGHT_SHORT),
+        ('i', random_values.LEFT_SIGNED_INT, random_values.RIGHT_SIGNED_INT),
+        ('I', random_values.LEFT_INT, random_values.RIGHT_INT),
+        ('q', random_values.LEFT_SIGNED_LONG, random_values.RIGHT_SIGNED_LONG),
+        ('Q', random_values.LEFT_LONG, random_values.RIGHT_LONG)
     ])
     def test_should_call_correct_random_function_when_calling_random_value(self, _format, left, right):
         field = DummyField('foo', 2, format=_format)
