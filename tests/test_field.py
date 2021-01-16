@@ -1,9 +1,12 @@
+import enum
 import struct
 
 import pytest
 
 from kifurushi.fields import (
-    ByteField, SignedByteField, ShortField, SignedShortField, IntField, SignedIntField, LongField, SignedLongField
+    ByteField, SignedByteField, ShortField, SignedShortField, IntField, SignedIntField, LongField, SignedLongField,
+    enum_to_dict, ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField, IntEnumField,
+    SignedIntEnumField, LongEnumField, SignedLongEnumField
 )
 from kifurushi.random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
@@ -135,3 +138,83 @@ class TestNumericField:
         remaining_data = field.compute_value(data)
         assert b'hello' == remaining_data
         assert value == field.value
+
+
+class TestEnumToDict:
+    """Tests function enum_to_dict"""
+
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize('value', [[1, 2], {1: 'hello'}])
+    def test_should_return_given_value_when_value_is_not_an_enum_class(self, value):
+        assert value == enum_to_dict(value)
+
+    def test_should_return_dict_when_giving_an_enum_class(self):
+        class Disney(enum.Enum):
+            MICKEY = 1
+            MINNIE = 2
+
+        assert {1: 'MICKEY', 2: 'MINNIE'} == enum_to_dict(Disney)
+
+
+# noinspection PyArgumentList
+class TestEnumByteField:
+
+    @pytest.mark.parametrize(('field_class', 'parent_class'), [
+        (ByteEnumField, ByteField),
+        (SignedByteEnumField, SignedByteField),
+        (ShortEnumField, ShortField),
+        (SignedShortEnumField, SignedShortField),
+        (IntEnumField, IntField),
+        (SignedIntEnumField, SignedIntField),
+        (LongEnumField, LongField),
+        (SignedLongEnumField, SignedLongField)
+    ])
+    def test_should_check_enum_field_inherit_the_right_class(self, field_class, parent_class):
+        assert issubclass(field_class, parent_class)
+
+    @pytest.mark.parametrize('enumeration', [
+        {'hello': 2},
+        [(2, 'hello')],
+        {2: 3.4}
+    ])
+    @pytest.mark.parametrize('field_class', [
+        ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField,
+        IntEnumField, SignedIntEnumField, LongEnumField, SignedLongEnumField
+    ])
+    def test_should_raise_error_when_enumeration_is_not_correct(self, enumeration, field_class):
+        with pytest.raises(TypeError):
+            field_class('foo', 2, enumeration)
+
+    @pytest.mark.parametrize(('field_class', 'left', 'right'), [
+        (ByteEnumField, LEFT_BYTE - 1, RIGHT_BYTE + 1),
+        (SignedByteEnumField, LEFT_SIGNED_BYTE - 1, RIGHT_SIGNED_BYTE + 1),
+        (ShortEnumField, LEFT_SHORT - 1, RIGHT_SHORT + 1),
+        (SignedShortEnumField, LEFT_SIGNED_SHORT - 1, RIGHT_SIGNED_SHORT + 1),
+        (IntEnumField, LEFT_INT - 1, RIGHT_INT + 1),
+        (SignedIntEnumField, LEFT_SIGNED_INT - 1, RIGHT_SIGNED_INT + 1),
+        (LongEnumField, LEFT_LONG - 1, RIGHT_LONG + 1),
+        (SignedLongEnumField, LEFT_SIGNED_LONG - 1, RIGHT_SIGNED_LONG + 1)
+    ])
+    def test_should_raise_error_when_key_value_is_out_of_field_boundaries(self, field_class, left, right):
+        for value in [left, right]:
+            enumeration = {value: 'hello'}
+            with pytest.raises(ValueError) as exc_info:
+                field_class('foo', 2, enumeration)
+
+            assert (f'all keys in enumeration attribute must be '
+                    f'between {left + 1} and {right - 1}') == str(exc_info.value)
+
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize('enumeration', [
+        {1: 'mickey', 2: 'minnie'},
+        enum.Enum('Disney', 'mickey minnie')
+    ])
+    @pytest.mark.parametrize('field_class', [
+        ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField,
+        IntEnumField, SignedIntEnumField, LongEnumField, SignedLongEnumField
+    ])
+    def test_should_not_raise_error_when_enumeration_is_correct(self, enumeration, field_class):
+        try:
+            field_class('foo', 2, enumeration)
+        except TypeError:
+            pytest.fail(f'unexpected error when instantiating class with enumeration: {enumeration}')

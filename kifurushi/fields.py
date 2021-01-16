@@ -1,4 +1,6 @@
 """This module contains different field implementation"""
+import enum
+from typing import Dict, Any, Union
 
 import attr
 
@@ -10,33 +12,28 @@ from .random_values import (
 )
 
 
+def check_boundaries(left: int, right: int, value: int, message: str) -> None:
+    if not left <= value <= right:
+        raise ValueError(message)
+
+
 def numeric_validator(field: Field, attribute: attr.Attribute, value: int) -> None:
     attribute_name = attribute.name if attribute.name[0] != '_' else attribute.name[1:]
     message = '{name} attribute must be between {left} and {right}'
     class_name = field.__class__.__name__
-    if class_name == 'ByteField' and not LEFT_BYTE <= value <= RIGHT_BYTE:
-        raise ValueError(message.format(name=attribute_name, left=LEFT_BYTE, right=RIGHT_BYTE))
-
-    if class_name == 'SignedByteField' and not LEFT_SIGNED_BYTE <= value <= RIGHT_SIGNED_BYTE:
-        raise ValueError(message.format(name=attribute_name, left=LEFT_SIGNED_BYTE, right=RIGHT_SIGNED_BYTE))
-
-    if class_name == 'ShortField' and not LEFT_SHORT <= value <= RIGHT_SHORT:
-        raise ValueError(message.format(name=attribute_name, left=LEFT_SHORT, right=RIGHT_SHORT))
-
-    if class_name == 'SignedShortField' and not LEFT_SIGNED_SHORT <= value <= RIGHT_SIGNED_SHORT:
-        raise ValueError(message.format(name=attribute_name, left=LEFT_SIGNED_SHORT, right=RIGHT_SIGNED_SHORT))
-
-    if class_name == 'IntField' and not LEFT_INT <= value <= RIGHT_INT:
-        raise ValueError(message.format(name=attribute_name, left=LEFT_INT, right=RIGHT_INT))
-
-    if class_name == 'SignedIntField' and not LEFT_SIGNED_INT <= value <= RIGHT_SIGNED_INT:
-        raise ValueError(message.format(name=attribute_name, left=LEFT_SIGNED_INT, right=RIGHT_SIGNED_INT))
-
-    if class_name == 'LongField' and not LEFT_LONG <= value <= RIGHT_LONG:
-        raise ValueError(message.format(name=attribute_name, left=LEFT_LONG, right=RIGHT_LONG))
-
-    if class_name == 'SignedLongField' and not LEFT_SIGNED_LONG <= value <= RIGHT_SIGNED_LONG:
-        raise ValueError(message.format(name=attribute_name, left=LEFT_SIGNED_LONG, right=RIGHT_SIGNED_LONG))
+    for name, left, right in [
+        ('ByteField', LEFT_BYTE, RIGHT_BYTE),
+        ('SignedByteField', LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE),
+        ('ShortField', LEFT_SHORT, RIGHT_SHORT),
+        ('SignedShortField', LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT),
+        ('IntField', LEFT_INT, RIGHT_INT),
+        ('SignedIntField', LEFT_SIGNED_INT, RIGHT_SIGNED_INT),
+        ('LongField', LEFT_LONG, RIGHT_LONG),
+        ('SignedLongField', LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)
+    ]:
+        if class_name == name:
+            check_boundaries(left, right, value, message.format(name=attribute_name, left=left, right=right))
+            break
 
 
 @attr.s(repr=False)
@@ -60,6 +57,46 @@ class NumericField(HexMixin, Field):
         self._value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
 
+
+def enum_to_dict(enumeration: enum.EnumMeta) -> Any:
+    if not isinstance(enumeration, enum.EnumMeta):
+        return enumeration
+
+    return {item.value: item.name for item in enumeration}
+
+
+def enum_key_validator(field: Field, _, enumeration: Dict[int, str]) -> None:
+    class_name = field.__class__.__name__
+    message = 'all keys in enumeration attribute must be between {left} and {right}'
+    for key in enumeration:
+        for name, left, right in [
+            ('ByteEnumField', LEFT_BYTE, RIGHT_BYTE),
+            ('SignedByteEnumField', LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE),
+            ('ShortEnumField', LEFT_SHORT, RIGHT_SHORT),
+            ('SignedShortEnumField', LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT),
+            ('IntEnumField', LEFT_INT, RIGHT_INT),
+            ('SignedIntEnumField', LEFT_SIGNED_INT, RIGHT_SIGNED_INT),
+            ('LongEnumField', LEFT_LONG, RIGHT_LONG),
+            ('SignedLongEnumField', LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)
+        ]:
+            if class_name == name:
+                check_boundaries(left, right, key, message.format(left=left, right=right))
+                break
+
+
+@attr.s
+class EnumMixin:
+    _enumeration: Union[enum.EnumMeta, Dict[int, str]] = attr.ib(converter=enum_to_dict, validator=[
+        attr.validators.deep_mapping(
+            key_validator=attr.validators.instance_of(int),
+            value_validator=attr.validators.instance_of(str),
+            mapping_validator=attr.validators.instance_of(dict)
+        ),
+        enum_key_validator
+    ])
+
+
+# Normal fields
 
 # TODO: see why slots attribute does not work as expected
 @attr.s(repr=False, slots=True)
@@ -108,3 +145,77 @@ class LongField(NumericField):
 class SignedLongField(NumericField):
     """Field class to represent eight signed bytes of network information."""
     _format: str = attr.ib(init=False, default='q')
+
+
+# Enum Fields
+
+@attr.s(repr=False, slots=True)
+class ByteEnumField(ByteField, EnumMixin):
+    """
+    Similar to ByteField, but has a third mandatory field, a dict or enum mapping values to their name
+    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    value which can be useful when playing / debugging in the terminal.
+    """
+
+
+@attr.s(repr=False, slots=True)
+class SignedByteEnumField(SignedByteField, EnumMixin):
+    """
+    Similar to SignedByteField, but has a third mandatory field, a dict or enum mapping values to their name
+    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    value which can be useful when playing / debugging in the terminal.
+    """
+
+
+@attr.s(repr=False, slots=True)
+class ShortEnumField(ShortField, EnumMixin):
+    """
+    Similar to ShortField, but has a third mandatory field, a dict or enum mapping values to their name
+    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    value which can be useful when playing / debugging in the terminal.
+    """
+
+
+@attr.s(repr=False, slots=True)
+class SignedShortEnumField(SignedShortField, EnumMixin):
+    """
+    Similar to SignedShortField, but has a third mandatory field, a dict or enum mapping values to their name
+    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    value which can be useful when playing / debugging in the terminal.
+    """
+
+
+@attr.s(repr=False, slots=True)
+class IntEnumField(IntField, EnumMixin):
+    """
+    Similar to IntField, but has a third mandatory field, a dict or enum mapping values to their name
+    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    value which can be useful when playing / debugging in the terminal.
+    """
+
+
+@attr.s(repr=False, slots=True)
+class SignedIntEnumField(SignedIntField, EnumMixin):
+    """
+    Similar to SignedIntField, but has a third mandatory field, a dict or enum mapping values to their name
+    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    value which can be useful when playing / debugging in the terminal.
+    """
+
+
+@attr.s(repr=False, slots=True)
+class LongEnumField(LongField, EnumMixin):
+    """
+    Similar to LongField, but has a third mandatory field, a dict or enum mapping values to their name
+    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    value which can be useful when playing / debugging in the terminal.
+    """
+
+
+@attr.s(repr=False, slots=True)
+class SignedLongEnumField(SignedLongField, EnumMixin):
+    """
+    Similar to ByteField, but has a third mandatory field, a dict or enum mapping values to their name
+    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    value which can be useful when playing / debugging in the terminal.
+    """
