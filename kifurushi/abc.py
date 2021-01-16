@@ -33,7 +33,7 @@ class Field(ABC):
 
     @property
     def size(self) -> int:
-        """Returns the size in bytes of the field"""
+        """Returns the size in bytes of the field."""
         return self._size
 
     @property
@@ -43,24 +43,27 @@ class Field(ABC):
 
     @property
     def default(self) -> Any:
-        """Returns field default value."""
+        """Returns field's default value."""
         return self._default
 
     @property
     def struct_format(self) -> str:
-        """Returns the struct format used under the hood for computation"""
+        """Returns the struct format used under the hood for computation of raw internal value."""
         return f'{self._order}{self._format}'
 
     @property
     def value(self) -> Any:
+        """Returns field's internal value."""
         return self._value
 
     @value.setter
     def value(self, value: Any) -> None:
+        """Sets field's internal value"""
         self._value = value
         attr.validate(self)
 
     def random_value(self) -> Any:
+        """Returns a random value according to the field format."""
         if self._format == 'b':
             return rand_signed_bytes()
 
@@ -92,7 +95,7 @@ class Field(ABC):
 
     def clone(self) -> 'Field':
         """
-        Returns a copy of the current object.
+        Returns a copy of the current field.
         """
         return copy.copy(self)
 
