@@ -6,7 +6,7 @@ import pytest
 from kifurushi.fields import (
     ByteField, SignedByteField, ShortField, SignedShortField, IntField, SignedIntField, LongField, SignedLongField,
     enum_to_dict, ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField, IntEnumField,
-    SignedIntEnumField, LongEnumField, SignedLongEnumField
+    SignedIntEnumField, LongEnumField, SignedLongEnumField, FixedStringField
 )
 from kifurushi.random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
@@ -157,7 +157,8 @@ class TestEnumToDict:
 
 
 # noinspection PyArgumentList
-class TestEnumByteField:
+class TestEnumFields:
+    """Tests all enum fields"""
 
     @pytest.mark.parametrize(('field_class', 'parent_class'), [
         (ByteEnumField, ByteField),
@@ -218,3 +219,81 @@ class TestEnumByteField:
             field_class('foo', 2, enumeration)
         except TypeError:
             pytest.fail(f'unexpected error when instantiating class with enumeration: {enumeration}')
+
+
+class TestFixedStringField:
+    """Tests class FixedStringField"""
+
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize('value', [b'hello', 4])
+    def test_should_raise_error_when_default_attribute_is_not_a_string(self, value):
+        with pytest.raises(TypeError) as exc_info:
+            FixedStringField('foo', value, 8)
+
+        assert f'default must be a string but you provided {value}' == str(exc_info.value)
+
+    @pytest.mark.parametrize('value', [4.5, '4', -1])
+    def test_should_raise_error_when_length_attribute_is_not_a_positive_integer(self, value):
+        with pytest.raises(TypeError) as exc_info:
+            FixedStringField('foo', 'hello', value)
+
+        assert f'length must be a positive integer but you provided {value}' == str(exc_info.value)
+
+    @pytest.mark.parametrize('value', ['b' * 10, 'b' * 6])
+    def test_should_raise_error_if_default_length_is_different_than_specified_length(self, value):
+        with pytest.raises(ValueError) as exc_info:
+            FixedStringField('foo', value, 8)
+
+        assert 'default length is different from the one given as third argument' == str(exc_info.value)
+
+    def test_should_correctly_instantiate_field(self):
+        field = FixedStringField('foo', 'h' * 8, 8)
+
+        assert 'foo' == field.name
+        assert 'h' * 8 == field.default == field.value
+        assert 8 == field.size
+        assert '!8s' == field.struct_format
+
+    # test of raw property
+
+    def test_raw_property_returns_correct_value(self):
+        value = 'h' * 8
+        field = FixedStringField('foo', value, 8)
+
+        assert value.encode() == field.raw
+
+    # test of value property
+
+    @pytest.mark.parametrize('value', [b'hello', 4])
+    def test_should_raise_error_when_setting_value_with_another_one_which_is_not_a_string(self, value):
+        field = FixedStringField('foo', 'h' * 8, 8)
+        with pytest.raises(TypeError) as exc_info:
+            field.value = value
+
+        assert f'value must be a string but you provided {value}' == str(exc_info.value)
+
+    @pytest.mark.parametrize('value', ['b' * 10, 'b' * 6])
+    def test_should_raise_error_when_giving_value_is_greater_than_length_authorized(self, value):
+        field = FixedStringField('foo', 'h' * 8, 8)
+        with pytest.raises(ValueError) as exc_info:
+            field.value = value
+
+        assert f'value length must be equal to {field._length}' == str(exc_info.value)
+
+    def test_should_not_raise_error_when_setting_value_with_a_correct_one(self):
+        field = FixedStringField('foo', 'h' * 8, 8)
+        value = 'b' * 8
+        try:
+            field.value = value
+        except (ValueError, TypeError):
+            pytest.fail(f'unexpected error when setting value with {value}')
+
+    # test of compute_value method
+
+    def test_should_correctly_compute_string_and_return_remaining_bytes(self):
+        field = FixedStringField('foo', 'h' * 8, 8)
+        data = struct.pack('!8sB', b'b' * 8, 2)
+        remaining_bytes = field.compute_value(data)
+
+        assert remaining_bytes == struct.pack('!B', 2)
+        assert 'b' * 8 == field.value

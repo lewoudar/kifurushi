@@ -219,3 +219,42 @@ class SignedLongEnumField(SignedLongField, EnumMixin):
     according to their meaning for the packet being forged / dissected. It will be use to pretty print
     value which can be useful when playing / debugging in the terminal.
     """
+
+
+class FixedStringField(Field):
+
+    def __init__(self, name: str, default: str, length: int):
+        if not isinstance(default, str):
+            raise TypeError(f'default must be a string but you provided {default}')
+
+        if not isinstance(length, int) or length <= 0:
+            raise TypeError(f'length must be a positive integer but you provided {length}')
+
+        if len(default) != length:
+            raise ValueError('default length is different from the one given as third argument')
+
+        self._length = length
+        super().__init__(name, default, format=f'{length}s')
+
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+        value: bytes = self._struct.unpack(data[:self._size])[0]
+        self._value = value.decode()
+        return data[self._size:]
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+    @value.setter
+    def value(self, value: str) -> None:
+        if not isinstance(value, str):
+            raise TypeError(f'value must be a string but you provided {value}')
+
+        if len(value) != self._length:
+            raise ValueError(f'value length must be equal to {self._length}')
+
+        self._value = value
+
+    @property
+    def raw(self) -> bytes:
+        return self._value.encode()
