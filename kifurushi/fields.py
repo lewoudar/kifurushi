@@ -1,7 +1,5 @@
 """This module contains different field implementation"""
-import copy
 import enum
-import struct
 from typing import Dict, Any, Union, Optional
 
 import attr
@@ -10,7 +8,7 @@ from .abc import Field
 from .random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
     LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT, LEFT_INT, RIGHT_INT, LEFT_SIGNED_INT, RIGHT_SIGNED_INT,
-    LEFT_LONG, RIGHT_LONG, LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG, rand_string
+    LEFT_LONG, RIGHT_LONG, LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG
 )
 
 
@@ -273,3 +271,74 @@ class FixedStringField(Field):
     def raw(self) -> bytes:
         """Returns bytes encoded value of the internal string."""
         return self._value.encode()
+
+
+@attr.s(slots=True)
+class FieldPart:
+    """
+    This class represents information to combine to form a BitsField object (signed byte, signed short, etc..).
+
+    **Parameters:**
+
+    * **name:** The name of field part.
+    * **default:** The default value of the field part.
+    * **size**: The number of bits this field part will take in the concrete field.
+    * **enumeration:** A `dict` or `enum.Enum` enumeration given friendly name to a specific value. This
+    attribute is optional.
+    """
+    _name: str = attr.ib(validator=attr.validators.instance_of(str))
+    _default: int = attr.ib(validator=attr.validators.instance_of(int))
+    _size: int = attr.ib(validator=attr.validators.instance_of(int))
+    _value: int = attr.ib(init=False)
+    _max_value: int = attr.ib(init=False)
+    _enumeration: Optional[Union[enum.EnumMeta, Dict[int, str]]] = attr.ib(
+        default=None,
+        converter=enum_to_dict,
+        validator=attr.validators.optional(attr.validators.deep_mapping(
+            key_validator=attr.validators.instance_of(int),
+            value_validator=attr.validators.instance_of(str),
+            mapping_validator=attr.validators.instance_of(dict)
+        )
+        )
+    )
+
+    def __attrs_post_init__(self):
+        self._max_value = 2 ** self._size - 1
+        if self._default < 0 or self._default > self._max_value:
+            raise ValueError(f'default must be between 0 and {self._max_value} but you provided {self._default}')
+
+        self._value = self._default
+
+    @property
+    def name(self) -> str:
+        """Returns the name of the field part."""
+        return self._name
+
+    @property
+    def default(self) -> int:
+        """Returns the default value of the field part."""
+        return self._default
+
+    @property
+    def value(self) -> int:
+        """Returns the current value of the field part."""
+        return self._value
+
+    @value.setter
+    def value(self, value: int) -> None:
+        """Sets the current value of the field part."""
+        if not isinstance(value, int):
+            raise TypeError(f'value must be a positive integer but you provided {value}')
+
+        if value < 0 or value > self._max_value:
+            raise ValueError(f'value must be between 0 and {self._max_value} but you provided {value}')
+
+    @property
+    def size(self) -> int:
+        """Returns the number of bits this object will take in the BitsField object."""
+        return self._size
+
+    @property
+    def enumeration(self) -> Optional[Dict[int, str]]:
+        """Returns dict enumeration given friendly name to a specific value."""
+        return self._enumeration
