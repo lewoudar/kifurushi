@@ -2,7 +2,7 @@
 import copy
 import struct
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 import attr
 
@@ -117,3 +117,111 @@ class Field(ABC):
         Returns the bytes representation of the object internal value.
         """
         return self._struct.pack(self._value)
+
+
+# Due to its nature, it is impossible to inherit from Field class because we can't have
+# a defined struct object here at instantiation. Some computations also need to change.
+@attr.s(slots=True, repr=False)
+class VariableStringField(ABC):
+    """
+    A field representing string data when length is not known in advance.
+
+    **Parameters:**
+
+    * **name:** The name of the field.
+    * **default:** A default value for the field. Defaults to "kifurushi".
+    * **length:** An optional maximum length of the field.
+    * **order:** Order used to format raw data using `struct` module. Defaults to "!" (network). Valid values are
+    "!", "<" (little-endian), ">" (big-endian), "@" (native), "=" (standard).
+    """
+    _name: str = attr.ib(validator=attr.validators.instance_of(str))
+    _default: str = attr.ib(default='kifurushi', validator=attr.validators.instance_of(str))
+    _max_length: Optional[int] = attr.ib(
+        default=None, validator=attr.validators.optional(attr.validators.instance_of(int))
+    )
+    _order: str = attr.ib(default='!', validator=attr.validators.in_(['<', '>', '!', '@', '=']))
+    _value: str = attr.ib(init=False)
+
+    def __attrs_post_init__(self):
+        if self._max_length is not None and len(self._default) > self._max_length:
+            raise ValueError(f'default must be less or equal than maximum length ({self._max_length})')
+
+        self._value = self._default
+
+    @property
+    def name(self) -> str:
+        """Returns field's name"""
+        return self._name
+
+    @property
+    def default(self) -> str:
+        """Returns field's default value."""
+        return self._default
+
+    @property
+    def max_length(self) -> Optional[int]:
+        """Returns the optional max length of the field."""
+        return self._max_length
+
+    @property
+    def value(self) -> str:
+        """Returns internal string."""
+        return self._value
+
+    @value.setter
+    def value(self, value: str) -> None:
+        if not isinstance(value, str):
+            raise TypeError(f'value must be a string but you provided {value}')
+
+        if self._max_length is not None and len(value) > self._max_length:
+            raise ValueError(f'value must be less or equal than maximum length ({self._max_length})')
+
+        self._value = value
+
+    @property
+    def raw(self) -> bytes:
+        """Returns bytes encoded value of the internal string."""
+        return self._value.encode()
+
+    def __repr__(self):
+        return (
+            f'<{self.__class__.__name__}: name={self._name}, value={self._value},'
+            f' default={self._default}, max_length={self._max_length}>'
+        )
+
+    @property
+    def struct_format(self) -> str:
+        """Returns the struct format used under the hood for computation of raw internal value."""
+        return f'{self._order}{len(self._value)}'
+
+    @property
+    def size(self) -> int:
+        """Returns the size in bytes of the field."""
+        return len(self._value)
+
+    @abstractmethod
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+        """
+        Sets internal string value and returns remaining bytes.
+
+        **Parameters:**
+
+        * **data:**: The raw data currently being parsed by a packet object.
+        * **packet:** The optional packet currently parsing a raw bytes object. For a variable string field,
+        it may be useful because the length of the field often depends on another field and we can retrieve if
+        from the packet.
+        """
+
+    def clone(self) -> 'VariableStringField':
+        """
+        Returns a copy of the current field.
+        """
+        return copy.copy(self)
+
+    def random_value(self) -> str:
+        """
+        Returns a random string. The length of the string is either the max length if given or the length
+        of the default attribute.
+        """
+        length = self._max_length if self._max_length is not None else len(self._default)
+        return rand_string(length)

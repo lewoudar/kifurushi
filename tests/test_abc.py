@@ -1,7 +1,7 @@
 import attr
 import pytest
 
-from kifurushi.abc import Field
+from kifurushi.abc import Field, VariableStringField
 from kifurushi import random_values
 
 
@@ -117,3 +117,137 @@ class TestFieldClass:
         field.value = 4
 
         assert b'\x00\x00\x00\x04' == field.raw
+
+
+class DummyStringField(VariableStringField):
+
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+        pass
+
+
+class TestDummyStringField:
+
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize('name', [b'hello', 4.3])
+    def test_should_raise_error_when_name_is_not_a_string(self, name):
+        with pytest.raises(TypeError):
+            DummyStringField(name)
+
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize('default', [b'hello', 4.3])
+    def test_should_raise_error_when_default_is_not_a_string(self, default):
+        with pytest.raises(TypeError):
+            DummyStringField('foo', default)
+
+    def test_should_return_kifurushi_when_no_default_value_is_given(self):
+        field = DummyStringField('foo')
+        assert 'kifurushi' == field.default
+
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize('max_length', [4.5, '4'])
+    def test_should_raise_error_when_max_length_is_not_an_integer(self, max_length):
+        with pytest.raises(TypeError):
+            DummyStringField('foo', 'bar', max_length)
+
+    def test_should_raise_error_when_default_length_is_greater_than_max_length(self):
+        with pytest.raises(ValueError) as exc_info:
+            DummyStringField('foo', default='hell yeah', max_length=6)
+
+        assert f'default must be less or equal than maximum length (6)' == str(exc_info.value)
+
+    @pytest.mark.parametrize('order', [4, '<='])
+    def test_should_raise_error_when_order_does_not_have_a_correct_value(self, order):
+        with pytest.raises(ValueError):
+            DummyStringField('foo', order=order)
+
+    def test_should_correctly_instantiate_field(self):
+        field = DummyStringField('foo', 'hello')
+
+        assert 'foo' == field.name
+        assert 'hello' == field.default == field.value
+        assert field.max_length is None
+
+    # test field representation
+
+    def test_should_returns_correct_representation_when_calling_repr_function(self):
+        field = DummyStringField('foo', 'hello', 50)
+
+        assert (
+                   f'<{field.__class__.__name__}: name={field.name}, value={field.value},'
+                   f' default={field.default}, max_length={field.max_length}>'
+               ) == repr(field)
+
+    # test value setting
+
+    @pytest.mark.parametrize('value', [b'hello', 4])
+    def test_should_raise_error_when_giving_value_is_not_a_string(self, value):
+        field = DummyStringField('field')
+        with pytest.raises(TypeError) as exc_info:
+            field.value = value
+
+        assert f'value must be a string but you provided {value}' == str(exc_info.value)
+
+    def test_should_raise_error_when_giving_value_has_a_length_greater_than_max_length_if_given(self):
+        field = DummyStringField('field', max_length=20)
+        with pytest.raises(ValueError) as exc_info:
+            field.value = 'b' * 21
+
+        assert 'value must be less or equal than maximum length (20)' == str(exc_info.value)
+
+    def test_should_not_raise_error_when_giving_correct_value(self):
+        field = DummyStringField('field', max_length=20)
+        value = 'b' * 20
+        try:
+            field.value = value
+        except (TypeError, ValueError):
+            pytest.fail(f'unexpected error when setting value attribute to {value}')
+
+    # tests of raw property
+
+    def test_raw_property_returns_correct_value(self):
+        field = DummyStringField('field')
+        field.value = 'banana'
+
+        assert b'banana' == field.raw
+
+    # test of struct_format property
+
+    def test_struct_format_returns_correct_value(self):
+        default = 'banana'
+        field = DummyStringField('foo', default)
+        assert f'{field._order}{len(default)}' == field.struct_format
+
+        value = 'hello'
+        field.value = value
+        assert f'{field._order}{len(value)}' == field.struct_format
+
+    # test of size property
+
+    def test_size_property_returns_correct_value(self):
+        value = 'banana'
+        field = DummyStringField('field', 'hello')
+        field.value = value
+
+        assert len(value) == field.size
+
+    # test of clone method
+
+    def test_should_return_a_copy_of_the_field_when_calling_clone_method(self):
+        field = DummyStringField('foo')
+        cloned_field = field.clone()
+
+        assert cloned_field == field
+        assert cloned_field is not field
+
+    # test of random_value method
+
+    @pytest.mark.parametrize(('arguments', 'length'), [
+        ({'default': 'hellboy'}, 7),
+        ({'max_length': 30}, 30)
+    ])
+    def test_should_return_a_correct_random_string_when_calling_random_value(self, arguments, length):
+        field = DummyStringField('foo', **arguments)
+        random_string = field.random_value()
+
+        assert isinstance(random_string, str)
+        assert length == len(random_string)
