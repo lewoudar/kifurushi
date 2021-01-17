@@ -105,8 +105,10 @@ class TestFieldClass:
     def test_should_return_a_comparable_object_when_calling_clone_method(self):
         field = DummyField('foo', 2, format='i')
         field.value = 3
+        cloned_field = field.clone()
 
-        assert field.clone() == field
+        assert cloned_field == field
+        assert cloned_field is not field
 
     # tests raw property
 
