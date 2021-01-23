@@ -423,6 +423,16 @@ class TestBitsField:
         with pytest.raises(ValueError):
             BitsField([FieldPart('part', 2, 3)], value)
 
+    @staticmethod
+    def get_int_from_tuple(size: int, value: Tuple[int, ...]) -> int:
+        # if we have a tuple (5, 6), their binary representation is (101, 110)
+        # so if each item must fill a size of 4 bits, we need to add extra leading 0 before concatenating the values
+        str_value = ''
+        for item in value:
+            bin_item = bin(item)[2:]
+            str_value += '0' * (size - len(bin_item)) + bin_item
+        return int(str_value, base=2)
+
     def test_should_correctly_instantiate_bits_field(self):
         field_parts = [FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)]
         field = BitsField(parts=field_parts, format='B')
@@ -430,6 +440,7 @@ class TestBitsField:
         assert field_parts == field.parts
         assert 1 == field.size
         assert '!B' == field.struct_format
+        assert self.get_int_from_tuple(4, (4, 5)) == field.default
 
     def test_should_correctly_represent_bits_field(self):
         field_parts = [FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)]
@@ -523,16 +534,6 @@ class TestBitsField:
             pytest.fail(f'unexpected error when setting value with {value}')
 
         assert value == field.value_as_tuple
-
-    @staticmethod
-    def get_int_from_tuple(size: int, value: Tuple[int, ...]) -> int:
-        # if we have a tuple (5, 6), their binary representation is (101, 110)
-        # so if each item must fill a size of 4 bits, we need to add extra leading 0 before concatenating the values
-        str_value = ''
-        for item in value:
-            bin_item = bin(item)[2:]
-            str_value += '0' * (size - len(bin_item)) + bin_item
-        return int(str_value, base=2)
 
     @pytest.mark.parametrize(('size', 'format_'), [
         (4, 'B'),
@@ -628,3 +629,4 @@ class TestSpecializedBitsFields:
         assert field_parts == field.parts
         assert f'!{format_}' == field.struct_format
         assert (4, 5) == field.value_as_tuple
+        assert field.default == field.value

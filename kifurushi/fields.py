@@ -407,17 +407,25 @@ class BitsField:
         representation += ')'
         return representation
 
-    @property
-    def value(self) -> int:
+    def _get_int_value_from_field_parts(self, default: bool = False) -> int:
         binary_representation = ''
         for field_part in self._parts:
-            bin_value = bin(field_part.value)[2:]
+            field_value = field_part.default if default else field_part.value
+            bin_value = bin(field_value)[2:]
             if len(bin_value) < field_part.size:
                 difference = field_part.size - len(bin_value)
                 bin_value = '0' * difference + bin_value
             binary_representation += bin_value
 
         return int(binary_representation, base=2)
+
+    @property
+    def default(self) -> int:
+        return self._get_int_value_from_field_parts(default=True)
+
+    @property
+    def value(self) -> int:
+        return self._get_int_value_from_field_parts()
 
     @property
     def value_as_tuple(self) -> Tuple[int, ...]:
