@@ -15,45 +15,49 @@ RIGHT_SIGNED_SHORT = 2 ** 15 - 1
 RIGHT_SIGNED_INT = 2 ** 31 - 1
 RIGHT_SIGNED_LONG = 2 ** 63 - 1
 
+# flake8 raises error B311 because it thinks we use random module for security/cryptographic purposes
+# since it is not the case here, we can disable this error with confidence
+# more about the error here: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
+
 
 def rand_bytes():
     """Returns an unsigned random byte value"""
-    return random.randint(LEFT_BYTE, RIGHT_BYTE)
+    return random.randint(LEFT_BYTE, RIGHT_BYTE)  # nosec
 
 
 def rand_signed_bytes():
     """Returns a signed random byte value"""
-    return random.randint(LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE)
+    return random.randint(LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE)  # nosec
 
 
 def rand_short():
     """Returns an unsigned random short value"""
-    return random.randint(LEFT_SHORT, RIGHT_SHORT)
+    return random.randint(LEFT_SHORT, RIGHT_SHORT)  # nosec
 
 
 def rand_signed_short():
     """Returns a signed random short value"""
-    return random.randint(LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT)
+    return random.randint(LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT)  # nosec
 
 
 def rand_int():
     """Returns an unsigned random int value"""
-    return random.randint(LEFT_INT, RIGHT_INT)
+    return random.randint(LEFT_INT, RIGHT_INT)  # nosec
 
 
 def rand_signed_int():
     """Returns a signed random int value"""
-    return random.randint(LEFT_SIGNED_INT, RIGHT_SIGNED_INT)
+    return random.randint(LEFT_SIGNED_INT, RIGHT_SIGNED_INT)  # nosec
 
 
 def rand_long():
     """Returns an unsigned random long value"""
-    return random.randint(LEFT_LONG, RIGHT_LONG)
+    return random.randint(LEFT_LONG, RIGHT_LONG)  # nosec
 
 
 def rand_signed_long():
     """Returns a signed random int value"""
-    return random.randint(LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)
+    return random.randint(LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)  # nosec
 
 
 def rand_string(length: int = None, characters: str = None) -> str:
@@ -77,6 +81,6 @@ def rand_string(length: int = None, characters: str = None) -> str:
     if characters is not None and (not isinstance(characters, str) or not characters):
         raise TypeError(f'characters must be a non empty string but you provided {characters}')
 
-    length = length if length else random.randint(20, 150)
+    length = length if length else random.randint(20, 150)  # nosec
     characters = characters if characters else string.ascii_letters
-    return ''.join([random.choice(characters) for _ in range(length)])
+    return ''.join([random.choice(characters) for _ in range(length)])  # nosec

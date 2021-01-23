@@ -478,7 +478,10 @@ class BitsField(Field):
         return self._struct.pack(self.value)
 
     def random_value(self) -> int:
-        return random.randint(0, 2 ** (self._size * 8) - 1)
+        # flake8 raises error B311 because it thinks we use random module for security/cryptographic purposes
+        # since it is not the case here, we can disable this error with confidence
+        # more about the error here: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
+        return random.randint(0, 2 ** (self._size * 8) - 1)  # nosec
 
     def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         """Sets internal value of each field part and returns remaining bytes."""
