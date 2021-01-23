@@ -2,9 +2,7 @@ import pytest
 
 from kifurushi import random_values
 
-
-# noinspection DuplicatedCode
-@pytest.mark.parametrize(('func', 'left', 'right'), [
+random_parametrize = pytest.mark.parametrize(('func', 'left', 'right'), [
     ('rand_bytes', 0, 2 ** 8 - 1),
     ('rand_signed_bytes', -2 ** 7, 2 ** 7 - 1),
     ('rand_short', 0, 2 ** 16 - 1),
@@ -14,25 +12,14 @@ from kifurushi import random_values
     ('rand_long', 0, 2 ** 64 - 1),
     ('rand_signed_long', -2 ** 63, 2 ** 63 - 1),
 ])
-def test_should_call_function_with_correct_arguments(mocker, func, left, right):
-    randint_mock = mocker.patch('random.randint')
-    getattr(random_values, func)()
+
+
+@random_parametrize
+def test_should_call_randint_function_with_correct_arguments(mocker, func, left, right):
+    randint_mock = mocker.patch('random.randint', return_value=2)
+
+    assert 2 == getattr(random_values, func)()
     randint_mock.assert_called_once_with(left, right)
-
-
-# noinspection DuplicatedCode
-@pytest.mark.parametrize(('func', 'left', 'right'), [
-    ('rand_bytes', 0, 2 ** 8 - 1),
-    ('rand_signed_bytes', -2 ** 7, 2 ** 7 - 1),
-    ('rand_short', 0, 2 ** 16 - 1),
-    ('rand_signed_short', -2 ** 15, 2 ** 15 - 1),
-    ('rand_int', 0, 2 ** 32 - 1),
-    ('rand_signed_int', -2 ** 31, 2 ** 31 - 1),
-    ('rand_long', 0, 2 ** 64 - 1),
-    ('rand_signed_long', -2 ** 63, 2 ** 63 - 1),
-])
-def test_should_return_correct_value(func, left, right):
-    assert left <= getattr(random_values, func)() <= right
 
 
 class TestRandString:
