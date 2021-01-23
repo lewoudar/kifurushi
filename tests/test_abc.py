@@ -1,12 +1,62 @@
+from typing import Union
+
 import attr
 import pytest
 
-from kifurushi.abc import Field, VariableStringField
+from kifurushi.abc import Field, CommonField, VariableStringField
 from kifurushi import random_values
 
 
+class TestField:
+    """Tests field class"""
+
+    @pytest.mark.parametrize('attribute', [
+        'size', 'default', 'value', 'raw', 'clone', 'struct_format',
+        'random_value', 'compute_value'
+    ])
+    def test_should_check_field_class_defines_all_common_attributes_and_methods(self, attribute):
+        assert getattr(Field, attribute, None) is not None
+
+    def test_should_prove_field_has_a_default_clone_method_implementation(self):
+        class FakeField(Field):
+            @property
+            def size(self) -> int:
+                return 0
+
+            @property
+            def default(self) -> Union[int, str]:
+                return 0
+
+            @property
+            def value(self) -> Union[int, str]:
+                return 0
+
+            @property
+            def struct_format(self) -> str:
+                return '!b'
+
+            @property
+            def raw(self) -> bytes:
+                return b''
+
+            def random_value(self) -> Union[int, str]:
+                return 0
+
+            def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+                return b''
+
+            def __repr__(self):
+                return 'Field'
+
+        field = FakeField()
+        cloned_field = field.clone()
+
+        assert cloned_field == field
+        assert cloned_field is not field
+
+
 @attr.s(repr=False)
-class DummyField(Field):
+class DummyField(CommonField):
     _value: int = attr.ib(init=False, validator=attr.validators.instance_of(int))
 
     def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
@@ -14,7 +64,11 @@ class DummyField(Field):
 
 
 # noinspection PyArgumentList
-class TestFieldClass:
+class TestCommonField:
+    """Tests class CommonField"""
+
+    def test_should_prove_class_inherit_from_base_field_class(self):
+        assert issubclass(CommonField, Field)
 
     def test_should_correctly_instantiate_attributes(self):
         field = DummyField('foo', 2, format='b')
@@ -125,7 +179,11 @@ class DummyStringField(VariableStringField):
         pass
 
 
-class TestDummyStringField:
+class TestVariableStringField:
+    """Tests class VariableStringField"""
+
+    def test_should_prove_class_inherit_from_base_field_class(self):
+        assert issubclass(VariableStringField, Field)
 
     # noinspection PyTypeChecker
     @pytest.mark.parametrize('name', [b'hello', 4.3])

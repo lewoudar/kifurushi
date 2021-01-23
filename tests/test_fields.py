@@ -4,6 +4,7 @@ from typing import Tuple
 
 import pytest
 
+from kifurushi.abc import Field
 from kifurushi.fields import (
     ByteField, SignedByteField, ShortField, SignedShortField, IntField, SignedIntField, LongField, SignedLongField,
     enum_to_dict, ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField, IntEnumField,
@@ -393,6 +394,9 @@ class TestFieldPart:
 class TestBitsField:
     """Tests class BitsField"""
 
+    def test_should_prove_class_inherit_base_field_class(self):
+        assert issubclass(BitsField, Field)
+
     @pytest.mark.parametrize(('parts', 'error'), [
         ({'foo': 2}, TypeError),
         ([], ValueError)
@@ -566,7 +570,7 @@ class TestBitsField:
 
     # test of clone method
 
-    def test_should_return_an_equivalent_copy_of_object_but_not_identical_when_calling_clone_method(self):
+    def test_should_return_a_copy_of_the_object_when_calling_clone_method(self):
         field = BitsField(parts=[FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')
         cloned_field = field.clone()
 

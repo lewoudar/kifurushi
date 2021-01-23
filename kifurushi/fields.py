@@ -7,7 +7,7 @@ from typing import Dict, Any, Union, Optional, List, Tuple
 
 import attr
 
-from .abc import Field
+from .abc import Field, CommonField
 from .random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
     LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT, LEFT_INT, RIGHT_INT, LEFT_SIGNED_INT, RIGHT_SIGNED_INT,
@@ -20,7 +20,7 @@ def check_boundaries(left: int, right: int, value: int, message: str) -> None:
         raise ValueError(message)
 
 
-def numeric_validator(field: Field, attribute: attr.Attribute, value: int) -> None:
+def numeric_validator(field: CommonField, attribute: attr.Attribute, value: int) -> None:
     attribute_name = attribute.name if attribute.name[0] != '_' else attribute.name[1:]
     message = '{name} attribute must be between {left} and {right}'
     class_name = field.__class__.__name__
@@ -51,7 +51,7 @@ class HexMixin:
 
 
 @attr.s(repr=False)
-class NumericField(HexMixin, Field):
+class NumericField(HexMixin, CommonField):
     """Base class for many numeric fields"""
     _default: int = attr.ib(validator=[attr.validators.instance_of(int), numeric_validator])
     _value: int = attr.ib(init=False, validator=[attr.validators.instance_of(int), numeric_validator])
@@ -68,7 +68,7 @@ def enum_to_dict(enumeration: enum.EnumMeta) -> Any:
     return {item.value: item.name for item in enumeration}
 
 
-def enum_key_validator(field: Field, _, enumeration: Dict[int, str]) -> None:
+def enum_key_validator(field: CommonField, _, enumeration: Dict[int, str]) -> None:
     class_name = field.__class__.__name__
     message = 'all keys in enumeration attribute must be between {left} and {right}'
     for key in enumeration:
@@ -224,7 +224,7 @@ class SignedLongEnumField(SignedLongField, EnumMixin):
     """
 
 
-class FixedStringField(Field):
+class FixedStringField(CommonField):
 
     def __init__(self, name: str, default: str, length: int):
         """
@@ -357,7 +357,7 @@ class FieldPart:
 
 
 @attr.s(slots=True, repr=False)
-class BitsField:
+class BitsField(Field):
     """
     A field representing bytes where a part represents flags like we have in IPV4 and TCP headers.
     """
@@ -478,14 +478,10 @@ class BitsField:
     def raw(self) -> bytes:
         return self._struct.pack(self.value)
 
-    def clone(self) -> 'BitsField':
-        """Returns a copy of the current object."""
-        return copy.copy(self)
-
     def random_value(self) -> int:
         return random.randint(0, 2 ** (self._size * 8) - 1)
 
-    def compute_value(self, data: bytes) -> bytes:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         """Sets internal value of each field part and returns remaining bytes."""
         self.value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]

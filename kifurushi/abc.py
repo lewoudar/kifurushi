@@ -2,7 +2,7 @@
 import copy
 import struct
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import attr
 
@@ -14,6 +14,65 @@ from .random_values import (
 
 @attr.s(repr=False)
 class Field(ABC):
+
+    @property
+    @abstractmethod
+    def size(self) -> int:
+        """Returns the size in bytes of the field"""
+
+    @property
+    @abstractmethod
+    def default(self) -> Union[int, str]:
+        """Returns the default value of the field."""
+
+    @property
+    @abstractmethod
+    def value(self) -> Union[int, str]:
+        """Returns the current value of the field."""
+
+    @value.setter
+    @abstractmethod
+    def value(self, value: Any) -> None:
+        """Sets the value of the field."""
+
+    @property
+    @abstractmethod
+    def struct_format(self) -> str:
+        """Returns the struct format used under the hood for computation of field value."""
+
+    @property
+    @abstractmethod
+    def raw(self) -> bytes:
+        """Returns the representation of field value in bytes as it will be sent on the network."""
+
+    @abstractmethod
+    def random_value(self) -> Union[int, str]:
+        """Returns a valid random value for this field."""
+
+    def clone(self) -> 'Field':
+        """Returns a copy of the field"""
+        return copy.copy(self)
+
+    @abstractmethod
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+        """
+        Computes the field value from the raw bytes and returns remaining bytes to parse from `data`.
+
+        **Parameters:**
+
+        * **data:**: The raw data currently being parsed by a packet object.
+        * **packet:** The optional packet currently parsing a raw bytes object. It can be useful
+        when current field value depends of another one.
+        """
+
+    @abstractmethod
+    def __repr__(self):
+        pass
+
+
+# noinspection PyAbstractClass
+@attr.s(repr=False)
+class CommonField(Field):
     _name: str = attr.ib(validator=attr.validators.instance_of(str))
     _default: Any = attr.ib()
     _value: Any = attr.ib(init=False)
@@ -48,22 +107,22 @@ class Field(ABC):
 
     @property
     def struct_format(self) -> str:
-        """Returns the struct format used under the hood for computation of raw internal value."""
+        """Returns the struct format used under the hood for computation of field value."""
         return f'{self._order}{self._format}'
 
     @property
-    def value(self) -> Any:
-        """Returns field's internal value."""
+    def value(self) -> Union[int, str]:
+        """Returns field's value."""
         return self._value
 
     @value.setter
     def value(self, value: Any) -> None:
-        """Sets field's internal value"""
+        """Sets field's value."""
         self._value = value
         attr.validate(self)
 
-    def random_value(self) -> Any:
-        """Returns a random value according to the field format."""
+    def random_value(self) -> Union[int, str]:
+        """Returns a valid random value according to the field format."""
         if self._format == 'b':
             return rand_signed_bytes()
 
@@ -93,36 +152,16 @@ class Field(ABC):
     def __repr__(self):
         return f'<{self.__class__.__name__}: name={self._name}, value={self._value}, default={self._default}>'
 
-    def clone(self) -> 'Field':
-        """
-        Returns a copy of the current field.
-        """
-        return copy.copy(self)
-
-    @abstractmethod
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
-        """
-        Sets internal field value and returns the remaining bytes to parse from `data`.
-
-        **Parameters:**
-
-        * **data:**: The raw data currently being parsed by a packet object.
-        * **packet:** The optional packet currently parsing a raw bytes object. It can be useful
-        when current field value depends of another one.
-        """
-
     @property
     def raw(self) -> bytes:
-        """
-        Returns the bytes representation of the object internal value.
-        """
+        """Returns the representation of field value in bytes as it will be sent on the network."""
         return self._struct.pack(self._value)
 
 
 # Due to its nature, it is impossible to inherit from Field class because we can't have
 # a defined struct object here at instantiation. Some computations also need to change.
 @attr.s(slots=True, repr=False)
-class VariableStringField(ABC):
+class VariableStringField(Field):
     """
     A field representing string data when length is not known in advance.
 
@@ -180,7 +219,7 @@ class VariableStringField(ABC):
 
     @property
     def raw(self) -> bytes:
-        """Returns bytes encoded value of the internal string."""
+        """Returns the representation of field value in bytes as it will be sent on the network."""
         return self._value.encode()
 
     def __repr__(self):
@@ -211,12 +250,6 @@ class VariableStringField(ABC):
         it may be useful because the length of the field often depends on another field and we can retrieve if
         from the packet.
         """
-
-    def clone(self) -> 'VariableStringField':
-        """
-        Returns a copy of the current field.
-        """
-        return copy.copy(self)
 
     def random_value(self) -> str:
         """
