@@ -1,6 +1,9 @@
 """This module contains different field implementation"""
+import copy
 import enum
-from typing import Dict, Any, Union, Optional
+import struct
+import random
+from typing import Dict, Any, Union, Optional, List, Tuple
 
 import attr
 
@@ -273,7 +276,7 @@ class FixedStringField(Field):
         return self._value.encode()
 
 
-@attr.s(slots=True)
+@attr.s(slots=True, repr=False)
 class FieldPart:
     """
     This class represents information to combine to form a BitsField object (signed byte, signed short, etc..).
@@ -333,6 +336,8 @@ class FieldPart:
         if value < 0 or value > self._max_value:
             raise ValueError(f'value must be between 0 and {self._max_value} but you provided {value}')
 
+        self._value = value
+
     @property
     def size(self) -> int:
         """Returns the number of bits this object will take in the BitsField object."""
@@ -342,3 +347,137 @@ class FieldPart:
     def enumeration(self) -> Optional[Dict[int, str]]:
         """Returns dict enumeration given friendly name to a specific value."""
         return self._enumeration
+
+    def __repr__(self):
+        if self._enumeration is not None:
+            value = self._enumeration.get(self._value, self._value)
+        else:
+            value = self._value
+        return f'{self.__class__.__name__}(name={self._name}, default={self._default}, value={value})'
+
+
+@attr.s(slots=True, repr=False)
+class BitsField:
+    """
+    A field representing bytes where a part represents flags like we have in IPV4 and TCP headers.
+    """
+    _parts: List[FieldPart] = attr.ib(validator=attr.validators.deep_iterable(
+        member_validator=attr.validators.instance_of(FieldPart)
+    ))
+    _format: str = attr.ib(validator=attr.validators.in_(['B', 'H', 'I', 'Q']))
+    _order: str = attr.ib(kw_only=True, default='!', validator=attr.validators.in_(['<', '>', '!', '@', '=']))
+    _struct: struct.Struct = attr.ib(init=False)
+    _size: int = attr.ib(init=False)
+
+    @_parts.validator
+    def _validate_parts(self, _, value: List[FieldPart]) -> None:
+        if not value:
+            raise ValueError('parts must not be an empty list')
+
+    def __attrs_post_init__(self):
+        _format = f'{self._order}{self._format}'
+        self._struct = struct.Struct(_format)
+        self._size = struct.calcsize(_format)
+
+        parts_size = sum(part.size for part in self._parts)
+        field_size_in_bits = self._size * 8
+        if field_size_in_bits != parts_size:
+            raise ValueError(
+                f'the sum in bits of the different FieldPart ({parts_size}) is different'
+                f' from the field size ({field_size_in_bits})'
+            )
+
+    @property
+    def parts(self) -> List[FieldPart]:
+        return self._parts
+
+    @property
+    def struct_format(self) -> str:
+        return f'{self._order}{self._format}'
+
+    @property
+    def size(self) -> int:
+        return self._size
+
+    def __repr__(self):
+        representation = f'{self.__class__.__name__}('
+        for part in self._parts:
+            representation += f'{part!r}, '
+        representation = representation.strip(', ')
+        representation += ')'
+        return representation
+
+    @property
+    def value(self) -> int:
+        binary_representation = ''
+        for field_part in self._parts:
+            bin_value = bin(field_part.value)[2:]
+            if len(bin_value) < field_part.size:
+                difference = field_part.size - len(bin_value)
+                bin_value = '0' * difference + bin_value
+            binary_representation += bin_value
+
+        return int(binary_representation, base=2)
+
+    @property
+    def value_as_tuple(self) -> Tuple[int, ...]:
+        return tuple(part.value for part in self._parts)
+
+    @value.setter
+    def value(self, value: Union[int, Tuple[int, ...]]) -> None:
+        if not isinstance(value, (int, tuple)):
+            raise TypeError('value must be an integer or a tuple of integers')
+
+        if isinstance(value, tuple):
+            if not value:
+                raise ValueError('value must not be an empty tuple')
+
+            if len(self._parts) != len(value):
+                raise ValueError('tuple length is different from field parts length')
+
+            for index, item in enumerate(value):
+                if not isinstance(item, int):
+                    raise ValueError('all items in tuple must be integers')
+
+                field_part = self._parts[index]
+                max_value = 2 ** field_part.size - 1
+                if not 0 <= item <= max_value:
+                    raise ValueError(
+                        f'item {field_part.name} must be between 0 and {max_value} according to the field part size'
+                    )
+                # everything is ok, we can set the value to the field part
+                field_part.value = item
+        else:
+            max_value = 2 ** (8 * self._size) - 1
+            if not 0 <= value <= max_value:
+                raise ValueError(f'integer value must be between 0 and {max_value}')
+
+            # we add leading 0 if necessary in the binary representation
+            bin_value = bin(value)[2:]
+            bin_value_length = len(bin_value)
+            size_in_bits = self._size * 8
+            if bin_value_length < size_in_bits:
+                bin_value = '0' * (size_in_bits - bin_value_length) + bin_value
+
+            # we fill the value of each field part and take care to update bin_value
+            # to the rest of the string not parsed
+            for field_part in self._parts:
+                str_value = bin_value[:field_part.size]
+                field_part.value = int(str_value, base=2)
+                bin_value = bin_value[field_part.size:]
+
+    @property
+    def raw(self) -> bytes:
+        return self._struct.pack(self.value)
+
+    def clone(self) -> 'BitsField':
+        """Returns a copy of the current object."""
+        return copy.copy(self)
+
+    def random_value(self) -> int:
+        return random.randint(0, 2 ** (self._size * 8) - 1)
+
+    def compute_value(self, data: bytes) -> bytes:
+        """Sets internal value of each field part and returns remaining bytes."""
+        self.value = self._struct.unpack(data[:self._size])[0]
+        return data[self._size:]

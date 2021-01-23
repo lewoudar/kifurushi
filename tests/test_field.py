@@ -1,12 +1,13 @@
 import enum
 import struct
+from typing import Tuple
 
 import pytest
 
 from kifurushi.fields import (
     ByteField, SignedByteField, ShortField, SignedShortField, IntField, SignedIntField, LongField, SignedLongField,
     enum_to_dict, ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField, IntEnumField,
-    SignedIntEnumField, LongEnumField, SignedLongEnumField, FixedStringField, FieldPart
+    SignedIntEnumField, LongEnumField, SignedLongEnumField, FixedStringField, FieldPart, BitsField
 )
 from kifurushi.random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
@@ -365,3 +366,239 @@ class TestFieldPart:
             part.value = value
 
         assert f'value must be between 0 and 7 but you provided {value}' == str(exc_info.value)
+
+    def test_should_not_raise_error_when_value_is_correct(self):
+        part = FieldPart('part', 2, 3)
+        value = 6
+        try:
+            part.value = value
+        except ValueError:
+            pytest.fail(f'unexpected error when setting value with {value}')
+
+        assert value == part.value
+
+    # test of __repr__ method
+
+    @pytest.mark.parametrize(('enumeration', 'representation'), [
+        ({1: 'MF', 2: 'DF', 4: 'reserved'}, 'FieldPart(name=flags, default=2, value=DF)'),
+        (None, 'FieldPart(name=flags, default=2, value=2)')
+    ])
+    def test_should_correctly_represent_field_part(self, enumeration, representation):
+        part = FieldPart('flags', 0b010, 3, enumeration)
+
+        assert representation == repr(part)
+
+
+class TestBitsField:
+    """Tests class BitsField"""
+
+    @pytest.mark.parametrize(('parts', 'error'), [
+        ({'foo': 2}, TypeError),
+        ([], ValueError)
+    ])
+    def test_should_raise_error_when_parts_is_not_correct(self, parts, error):
+        with pytest.raises(error) as exc_info:
+            BitsField(parts, 'B')
+
+        if error is ValueError:
+            assert 'parts must not be an empty list' == str(exc_info.value)
+
+    @pytest.mark.parametrize(('size_1', 'size_2'), [
+        (3, 4),
+        (4, 5)
+    ])
+    def test_should_raise_error_when_parts_size_is_not_correct(self, size_1, size_2):
+        with pytest.raises(ValueError) as exc_info:
+            BitsField(
+                parts=[FieldPart('version', 4, size_1), FieldPart('IHL', 5, size_2)],
+                format='B'  # 1 byte (8 bits)
+            )
+        size = size_1 + size_2
+        assert (f'the sum in bits of the different FieldPart ({size})'
+                f' is different from the field size (8)') == str(exc_info.value)
+
+    @pytest.mark.parametrize('value', [4, b'h', 'h'])
+    def test_should_raise_error_when_format_is_not_correct(self, value):
+        with pytest.raises(ValueError):
+            BitsField([FieldPart('part', 2, 3)], value)
+
+    def test_should_correctly_instantiate_bits_field(self):
+        field_parts = [FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)]
+        field = BitsField(parts=field_parts, format='B')
+
+        assert field_parts == field.parts
+        assert 1 == field.size
+        assert '!B' == field.struct_format
+
+    def test_should_correctly_represent_bits_field(self):
+        field_parts = [FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)]
+        field = BitsField(parts=field_parts, format='B')
+
+        assert ('BitsField(FieldPart(name=version, default=4, value=4),'
+                ' FieldPart(name=IHL, default=5, value=5))') == repr(field)
+
+    # test of value_as_tuple property
+
+    def test_should_return_correct_value_when_calling_value_as_tuple_property(self):
+        field = BitsField(parts=[FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')
+        assert (4, 5) == field.value_as_tuple
+
+    # test of value property
+
+    def test_should_return_correct_value_when_calling_value_property(self):
+        field = BitsField(parts=[FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')
+        assert int('01000101', base=2) == field.value
+
+    @pytest.mark.parametrize('value', ['4', [3, 5]])
+    def test_should_raise_error_when_value_is_not_integer_or_tuple(self, value):
+        field = BitsField(parts=[FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')
+        with pytest.raises(TypeError) as exc_info:
+            field.value = value
+
+        assert 'value must be an integer or a tuple of integers' == str(exc_info.value)
+
+    def test_should_raise_error_when_tuple_is_empty(self):
+        field = BitsField(parts=[FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')
+        with pytest.raises(ValueError) as exc_info:
+            field.value = ()
+
+        assert 'value must not be an empty tuple' == str(exc_info.value)
+
+    def test_should_raise_error_when_all_items_in_tuple_are_not_integers(self):
+        field = BitsField(parts=[FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')
+        with pytest.raises(ValueError) as exc_info:
+            field.value = (2, 3.4)
+
+        assert 'all items in tuple must be integers' == str(exc_info.value)
+
+    def test_should_raise_error_when_tuple_length_is_different_field_parts_length(self):
+        field = BitsField(parts=[FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')
+        with pytest.raises(ValueError) as exc_info:
+            field.value = (2, 3, 4)
+
+        assert 'tuple length is different from field parts length' == str(exc_info.value)
+
+    @pytest.mark.parametrize(('size', 'format_', 'value_1', 'value_2'), [
+        (4, 'B', -1, 2 ** 4),
+        (8, 'H', -1, 2 ** 8),
+        (16, 'I', -1, 2 ** 16),
+        (32, 'Q', -1, 2 ** 32)
+    ])
+    def test_should_raise_error_when_items_dont_have_a_correct_value(self, size, format_, value_1, value_2):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        for value in [value_1, value_2]:
+            with pytest.raises(ValueError) as exc_info:
+                field.value = (value, 4)
+
+            message = f'item version must be between 0 and {2 ** size - 1} according to the field part size'
+            assert message == str(exc_info.value)
+
+    @pytest.mark.parametrize(('size', 'format_', 'value_1', 'value_2'), [
+        (4, 'B', -1, RIGHT_BYTE + 1),
+        (8, 'H', -1, RIGHT_SHORT + 1),
+        (16, 'I', -1, RIGHT_INT + 1),
+        (32, 'Q', -1, RIGHT_LONG + 1)
+    ])
+    def test_should_raise_error_when_int_value_is_not_in_valid_boundaries(self, size, format_, value_1, value_2):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        for value in [value_1, value_2]:
+            with pytest.raises(ValueError) as exc_info:
+                field.value = value
+
+            assert f'integer value must be between 0 and {value_2 - 1}' == str(exc_info.value)
+
+    @pytest.mark.parametrize(('size', 'format_'), [
+        (4, 'B'),
+        (8, 'H'),
+        (16, 'I'),
+        (32, 'Q')
+    ])
+    def test_should_not_raise_error_when_setting_a_correct_tuple_value(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        value = (5, 6)
+        try:
+            field.value = value
+        except ValueError:
+            pytest.fail(f'unexpected error when setting value with {value}')
+
+        assert value == field.value_as_tuple
+
+    @staticmethod
+    def get_int_from_tuple(size: int, value: Tuple[int, ...]) -> int:
+        # if we have a tuple (5, 6), their binary representation is (101, 110)
+        # so if each item must fill a size of 4 bits, we need to add extra leading 0 before concatenating the values
+        str_value = ''
+        for item in value:
+            bin_item = bin(item)[2:]
+            str_value += '0' * (size - len(bin_item)) + bin_item
+        return int(str_value, base=2)
+
+    @pytest.mark.parametrize(('size', 'format_'), [
+        (4, 'B'),
+        (8, 'H'),
+        (16, 'I'),
+        (32, 'Q')
+    ])
+    def test_should_not_raise_error_when_setting_a_correct_int_value(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        value = (5, 6)
+        int_value = self.get_int_from_tuple(size, value)
+        try:
+            field.value = int_value
+        except ValueError:
+            pytest.fail(f'unexpected error when setting value with {value}')
+
+        assert value == field.value_as_tuple
+
+    # test of raw property
+
+    @pytest.mark.parametrize(('size', 'format_'), [
+        (4, 'B'),
+        (8, 'H'),
+        (16, 'I'),
+        (32, 'Q')
+    ])
+    def test_should_return_byte_value_when_calling_raw_property(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        assert struct.pack(f'!{format_}', field.value) == field.raw
+
+    # test of clone method
+
+    def test_should_return_an_equivalent_copy_of_object_but_not_identical_when_calling_clone_method(self):
+        field = BitsField(parts=[FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')
+        cloned_field = field.clone()
+
+        assert cloned_field == field
+        assert cloned_field is not field
+
+    # test of random_value method
+
+    @pytest.mark.parametrize(('size', 'format_', 'right_value'), [
+        (4, 'B', RIGHT_BYTE),
+        (8, 'H', RIGHT_SHORT),
+        (16, 'I', RIGHT_INT),
+        (32, 'Q', RIGHT_LONG)
+    ])
+    def test_should_call_randint_function_with_correct_values(self, mocker, size, format_, right_value):
+        randint_mock = mocker.patch('random.randint', return_value=2)
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+
+        assert 2 == field.random_value()
+        randint_mock.assert_called_once_with(0, right_value)
+
+    # test of compute_value method
+
+    @pytest.mark.parametrize(('size', 'format_'), [
+        (4, 'B'),
+        (8, 'H'),
+        (16, 'I'),
+        (32, 'Q')
+    ])
+    def test_should_compute_internal_field_part_value_when_calling_compute_value_method(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        value = (8, 11)
+        data = struct.pack(f'!{format_}5s', self.get_int_from_tuple(size, value), b'hello')
+        remaining_data = field.compute_value(data)
+
+        assert b'hello' == remaining_data
+        assert (8, 11) == field.value_as_tuple
