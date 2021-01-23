@@ -124,7 +124,7 @@ class TestNumericField:
         else:
             assert f'<{field_class.__name__}: name=foo, value=17, default=2>' == repr(field)
 
-    @pytest.mark.parametrize(('field_class', '_format', 'value'), [
+    @pytest.mark.parametrize(('field_class', 'format_', 'value'), [
         (ByteField, 'B', 6),
         (SignedByteField, 'b', -6),
         (ShortField, 'H', 6),
@@ -134,9 +134,9 @@ class TestNumericField:
         (LongField, 'Q', 6),
         (SignedLongField, 'q', -6)
     ])
-    def test_should_correctly_compute_value_and_return_remaining_bytes(self, field_class, _format, value):
+    def test_should_correctly_compute_value_and_return_remaining_bytes(self, field_class, format_, value):
         field = field_class('foo', 2)
-        data = struct.pack(f'!{_format}5s', value, b'hello')
+        data = struct.pack(f'!{format_}5s', value, b'hello')
         remaining_data = field.compute_value(data)
         assert b'hello' == remaining_data
         assert value == field.value
