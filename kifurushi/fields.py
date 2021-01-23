@@ -1,8 +1,7 @@
 """This module contains different field implementation"""
-import copy
 import enum
-import struct
 import random
+import struct
 from typing import Dict, Any, Union, Optional, List, Tuple
 
 import attr
