@@ -7,7 +7,8 @@ import pytest
 from kifurushi.fields import (
     ByteField, SignedByteField, ShortField, SignedShortField, IntField, SignedIntField, LongField, SignedLongField,
     enum_to_dict, ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField, IntEnumField,
-    SignedIntEnumField, LongEnumField, SignedLongEnumField, FixedStringField, FieldPart, BitsField
+    SignedIntEnumField, LongEnumField, SignedLongEnumField, FixedStringField, FieldPart, BitsField, ByteBitsField,
+    ShortBitsField, IntBitsField, LongBitsField
 )
 from kifurushi.random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
@@ -602,3 +603,28 @@ class TestBitsField:
 
         assert b'hello' == remaining_data
         assert (8, 11) == field.value_as_tuple
+
+
+class TestSpecializedBitsFields:
+    """Tests classes ByteBitsField, ShortBitsField, IntBitsField, LongBitsField"""
+
+    @pytest.mark.parametrize('bit_class', [ByteBitsField, ShortBitsField, IntBitsField, LongBitsField])
+    def test_should_check_classes_inherit_from_bits_field(self, bit_class):
+        assert issubclass(bit_class, BitsField)
+
+    @pytest.mark.parametrize(('bit_class', 'size', 'format_'), [
+        (ByteBitsField, 4, 'B'),
+        (ShortBitsField, 8, 'H'),
+        (IntBitsField, 16, 'I'),
+        (LongBitsField, 32, 'Q')
+    ])
+    def test_should_correctly_instantiate_object(self, bit_class, size, format_):
+        field_parts = [FieldPart('version', 4, size), FieldPart('IHL', 5, size)]
+        # Pycharm 2020.3 has an issue related to overriding attributes on a "attrs" class
+        # noinspection PyArgumentList
+        field = bit_class(field_parts)
+
+        assert size * 2 == field.size * 8
+        assert field_parts == field.parts
+        assert f'!{format_}' == field.struct_format
+        assert (4, 5) == field.value_as_tuple

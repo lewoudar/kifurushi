@@ -481,3 +481,23 @@ class BitsField:
         """Sets internal value of each field part and returns remaining bytes."""
         self.value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
+
+
+@attr.s(slots=True, repr=False)
+class ByteBitsField(BitsField):
+    _format: str = attr.ib(default='B', init=False)
+
+
+@attr.s(slots=True, repr=False)
+class ShortBitsField(BitsField):
+    _format: str = attr.ib(default='H', init=False)
+
+
+@attr.s(slots=True, repr=False)
+class IntBitsField(BitsField):
+    _format: str = attr.ib(default='I', init=False)
+
+
+@attr.s(slots=True, repr=False)
+class LongBitsField(BitsField):
+    _format: str = attr.ib(default='Q', init=False)
