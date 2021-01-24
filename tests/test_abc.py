@@ -219,16 +219,16 @@ class TestVariableStringField:
             DummyStringField('foo', order=order)
 
     def test_should_correctly_instantiate_field(self):
-        field = DummyStringField('foo', 'hello')
+        field = DummyStringField('fruit', 'apple')
 
-        assert 'foo' == field.name
-        assert 'hello' == field.default == field.value
+        assert 'fruit' == field.name
+        assert 'apple' == field.default == field.value
         assert field.max_length is None
 
     # test field representation
 
     def test_should_returns_correct_representation_when_calling_repr_function(self):
-        field = DummyStringField('foo', 'hello', 50)
+        field = DummyStringField('fruit', 'apple', 50)
 
         assert (
                    f'<{field.__class__.__name__}: name={field.name}, value={field.value},'
@@ -239,31 +239,30 @@ class TestVariableStringField:
 
     @pytest.mark.parametrize('value', [b'hello', 4])
     def test_should_raise_error_when_giving_value_is_not_a_string(self, value):
-        field = DummyStringField('field')
+        field = DummyStringField('apple')
         with pytest.raises(TypeError) as exc_info:
             field.value = value
 
-        assert f'value must be a string but you provided {value}' == str(exc_info.value)
+        assert f'{field.name} value must be a string but you provided {value}' == str(exc_info.value)
 
     def test_should_raise_error_when_giving_value_has_a_length_greater_than_max_length_if_given(self):
-        field = DummyStringField('field', max_length=20)
+        field = DummyStringField('fruit', max_length=20)
         with pytest.raises(ValueError) as exc_info:
             field.value = 'b' * 21
 
-        assert 'value must be less or equal than maximum length (20)' == str(exc_info.value)
+        assert f'{field.name} value must be less or equal than maximum length (20)' == str(exc_info.value)
 
-    def test_should_not_raise_error_when_giving_correct_value(self):
-        field = DummyStringField('field', max_length=20)
-        value = 'b' * 20
-        try:
-            field.value = value
-        except (TypeError, ValueError):
-            pytest.fail(f'unexpected error when setting value attribute to {value}')
+    def test_should_set_value_when_giving_correct_input(self):
+        field = DummyStringField('fruit', max_length=20)
+        given_value = 'b' * 20
+        field.value = given_value
+
+        assert given_value == field.value
 
     # tests of raw property
 
     def test_raw_property_returns_correct_value(self):
-        field = DummyStringField('field')
+        field = DummyStringField('fruit')
         field.value = 'banana'
 
         assert b'banana' == field.raw
@@ -272,7 +271,7 @@ class TestVariableStringField:
 
     def test_struct_format_returns_correct_value(self):
         default = 'banana'
-        field = DummyStringField('foo', default)
+        field = DummyStringField('fruit', default)
         assert f'{field._order}{len(default)}' == field.struct_format
 
         value = 'hello'
@@ -283,7 +282,7 @@ class TestVariableStringField:
 
     def test_size_property_returns_correct_value(self):
         value = 'banana'
-        field = DummyStringField('field', 'hello')
+        field = DummyStringField('fruit', 'hello')
         field.value = value
 
         assert len(value) == field.size
@@ -291,7 +290,7 @@ class TestVariableStringField:
     # test of clone method
 
     def test_should_return_a_copy_of_the_field_when_calling_clone_method(self):
-        field = DummyStringField('foo')
+        field = DummyStringField('fruit')
         cloned_field = field.clone()
 
         assert cloned_field == field

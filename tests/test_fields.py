@@ -74,7 +74,7 @@ class TestNumericField:
             with pytest.raises(ValueError) as exc_info:
                 field_class('foo', value)
 
-            assert f'default attribute must be between {left + 1} and {right - 1}' == str(exc_info.value)
+            assert f'foo default must be between {left + 1} and {right - 1}' == str(exc_info.value)
 
     @pytest.mark.parametrize(('field_class', 'default'), WITHIN_BOUNDARIES)
     def test_should_not_raise_error_when_default_attribute_is_correct(self, field_class, default):
@@ -90,15 +90,14 @@ class TestNumericField:
             with pytest.raises(ValueError) as exc_info:
                 field.value = value
 
-            assert f'value attribute must be between {left + 1} and {right - 1}' == str(exc_info.value)
+            assert f'foo value must be between {left + 1} and {right - 1}' == str(exc_info.value)
 
     @pytest.mark.parametrize(('field_class', 'value'), WITHIN_BOUNDARIES)
-    def test_should_not_raise_error_when_value_attribute_is_correct(self, field_class, value):
+    def test_should_set_value_attribute_when_giving_correct_value(self, field_class, value):
         field = field_class('foo', 2)
-        try:
-            field.value = value
-        except ValueError:
-            pytest.fail(f'unexpected error when setting value attribute with value {value}')
+        field.value = value
+
+        assert value == field.value
 
     @pytest.mark.parametrize(('field_class', 'size', 'struct_format'), [
         (ByteField, 1, '!B'),
@@ -280,7 +279,7 @@ class TestFixedStringField:
         with pytest.raises(TypeError) as exc_info:
             field.value = value
 
-        assert f'value must be a string but you provided {value}' == str(exc_info.value)
+        assert f'{field.name} value must be a string but you provided {value}' == str(exc_info.value)
 
     @pytest.mark.parametrize('value', ['b' * 10, 'b' * 6])
     def test_should_raise_error_when_giving_value_is_greater_than_length_authorized(self, value):
@@ -288,7 +287,7 @@ class TestFixedStringField:
         with pytest.raises(ValueError) as exc_info:
             field.value = value
 
-        assert f'value length must be equal to {field._length}' == str(exc_info.value)
+        assert f'the length of {field.name} value must be equal to {field._length}' == str(exc_info.value)
 
     def test_should_not_raise_error_when_setting_value_with_a_correct_one(self):
         field = FixedStringField('foo', 'h' * 8, 8)
@@ -362,19 +361,19 @@ class TestFieldPart:
 
     @pytest.mark.parametrize('value', [b'value', 4.5])
     def test_should_raise_error_when_value_set_is_not_of_correct_type(self, value):
-        part = FieldPart('part', 2, 3)
+        part = FieldPart('banana', 2, 3)
         with pytest.raises(TypeError) as exc_info:
             part.value = value
 
-        assert f'value must be a positive integer but you provided {value}' == str(exc_info.value)
+        assert f'{part.name} value must be a positive integer but you provided {value}' == str(exc_info.value)
 
     @pytest.mark.parametrize('value', [-1, 8])
     def test_should_raise_error_when_value_is_not_valid_boundaries(self, value):
-        part = FieldPart('part', 2, 3)
+        part = FieldPart('banana', 2, 3)
         with pytest.raises(ValueError) as exc_info:
             part.value = value
 
-        assert f'value must be between 0 and 7 but you provided {value}' == str(exc_info.value)
+        assert f'{part.name} value must be between 0 and 7 but you provided {value}' == str(exc_info.value)
 
     def test_should_set_field_part_value_when_given_value_is_correct(self):
         part = FieldPart('part', 2, 3)

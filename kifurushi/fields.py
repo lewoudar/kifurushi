@@ -21,7 +21,7 @@ def check_boundaries(left: int, right: int, value: int, message: str) -> None:
 
 def numeric_validator(field: CommonField, attribute: attr.Attribute, value: int) -> None:
     attribute_name = attribute.name if attribute.name[0] != '_' else attribute.name[1:]
-    message = '{name} attribute must be between {left} and {right}'
+    message = '{name} {attribute_name} must be between {left} and {right}'
     class_name = field.__class__.__name__
     for name, left, right in [
         ('ByteField', LEFT_BYTE, RIGHT_BYTE),
@@ -34,7 +34,11 @@ def numeric_validator(field: CommonField, attribute: attr.Attribute, value: int)
         ('SignedLongField', LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)
     ]:
         if class_name == name:
-            check_boundaries(left, right, value, message.format(name=attribute_name, left=left, right=right))
+            check_boundaries(
+                left, right, value, message.format(
+                    name=field.name, attribute_name=attribute_name, left=left, right=right
+                )
+            )
             break
 
 
@@ -262,10 +266,10 @@ class FixedStringField(CommonField):
     def value(self, value: str) -> None:
         """Sets internal string."""
         if not isinstance(value, str):
-            raise TypeError(f'value must be a string but you provided {value}')
+            raise TypeError(f'{self._name} value must be a string but you provided {value}')
 
         if len(value) != self._length:
-            raise ValueError(f'value length must be equal to {self._length}')
+            raise ValueError(f'the length of {self._name} value must be equal to {self._length}')
 
         self._value = value
 
@@ -330,10 +334,10 @@ class FieldPart:
     def value(self, value: int) -> None:
         """Sets the current value of the field part."""
         if not isinstance(value, int):
-            raise TypeError(f'value must be a positive integer but you provided {value}')
+            raise TypeError(f'{self._name} value must be a positive integer but you provided {value}')
 
         if value < 0 or value > self._max_value:
-            raise ValueError(f'value must be between 0 and {self._max_value} but you provided {value}')
+            raise ValueError(f'{self._name} value must be between 0 and {self._max_value} but you provided {value}')
 
         self._value = value
 

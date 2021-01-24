@@ -210,10 +210,10 @@ class VariableStringField(Field):
     @value.setter
     def value(self, value: str) -> None:
         if not isinstance(value, str):
-            raise TypeError(f'value must be a string but you provided {value}')
+            raise TypeError(f'{self._name} value must be a string but you provided {value}')
 
         if self._max_length is not None and len(value) > self._max_length:
-            raise ValueError(f'value must be less or equal than maximum length ({self._max_length})')
+            raise ValueError(f'{self._name} value must be less or equal than maximum length ({self._max_length})')
 
         self._value = value
 
