@@ -360,7 +360,7 @@ class BitsField(Field):
     """
     A field representing bytes where where some bits have a specific meaning like we can see in IPV4 or CTP headers.
 
-    ** Parameters: **
+    **Parameters:**
 
     * **parts:** The list of FieldPart used to compose the field object.
     * **format:** The `struct` format used to represent the field in its binary representation. Valid values are "B"
@@ -500,6 +500,35 @@ class BitsField(Field):
         """Sets internal value of each field part and returns remaining bytes."""
         self.value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
+
+    def get_field_part_value(self, name: str) -> int:
+        """
+        Returns the value of a field part identified by its name.
+
+        **Parameters:**
+
+        * **name:** The name of the field part whose value is requested.
+        """
+        mapping = {field_part.name: field_part for field_part in self._parts}
+        if name not in mapping:
+            raise KeyError(f'no field part was found with name {name}')
+
+        return mapping[name].value
+
+    def set_field_part_value(self, name: str, value: int) -> None:
+        """
+        Sets the value of a field part identified by its name.
+
+        **Parameters:**
+
+        * **name:** The name of the field part whose value must be set.
+        * **value:** The value to set to the field part.
+        """
+        mapping = {field_part.name: field_part for field_part in self._parts}
+        if name not in mapping:
+            raise KeyError(f'no field part was found with name {name}')
+
+        mapping[name].value = value
 
 
 @attr.s(slots=True, repr=False)

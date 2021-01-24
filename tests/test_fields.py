@@ -28,6 +28,13 @@ out_of_boundaries_parametrize = pytest.mark.parametrize(('field_class', 'left', 
     (SignedLongField, LEFT_SIGNED_LONG - 1, RIGHT_SIGNED_LONG + 1)
 ])
 
+size_format_parametrize = pytest.mark.parametrize(('size', 'format_'), [
+    (4, 'B'),
+    (8, 'H'),
+    (16, 'I'),
+    (32, 'Q')
+])
+
 WITHIN_BOUNDARIES = [
     (ByteField, LEFT_BYTE),
     (ByteField, RIGHT_BYTE),
@@ -369,15 +376,12 @@ class TestFieldPart:
 
         assert f'value must be between 0 and 7 but you provided {value}' == str(exc_info.value)
 
-    def test_should_not_raise_error_when_value_is_correct(self):
+    def test_should_set_field_part_value_when_given_value_is_correct(self):
         part = FieldPart('part', 2, 3)
-        value = 6
-        try:
-            part.value = value
-        except ValueError:
-            pytest.fail(f'unexpected error when setting value with {value}')
+        given_value = 6
+        part.value = given_value
 
-        assert value == part.value
+        assert given_value == part.value
 
     # test of __repr__ method
 
@@ -523,12 +527,7 @@ class TestBitsField:
 
             assert f'integer value must be between 0 and {value_2 - 1}' == str(exc_info.value)
 
-    @pytest.mark.parametrize(('size', 'format_'), [
-        (4, 'B'),
-        (8, 'H'),
-        (16, 'I'),
-        (32, 'Q')
-    ])
+    @size_format_parametrize
     def test_should_not_raise_error_when_setting_a_correct_tuple_value(self, size, format_):
         field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
         value = (5, 6)
@@ -539,12 +538,7 @@ class TestBitsField:
 
         assert value == field.value_as_tuple
 
-    @pytest.mark.parametrize(('size', 'format_'), [
-        (4, 'B'),
-        (8, 'H'),
-        (16, 'I'),
-        (32, 'Q')
-    ])
+    @size_format_parametrize
     def test_should_not_raise_error_when_setting_a_correct_int_value(self, size, format_):
         field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
         value = (5, 6)
@@ -558,12 +552,7 @@ class TestBitsField:
 
     # test of raw property
 
-    @pytest.mark.parametrize(('size', 'format_'), [
-        (4, 'B'),
-        (8, 'H'),
-        (16, 'I'),
-        (32, 'Q')
-    ])
+    @size_format_parametrize
     def test_should_return_byte_value_when_calling_raw_property(self, size, format_):
         field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
         assert struct.pack(f'!{format_}', field.value) == field.raw
@@ -594,12 +583,7 @@ class TestBitsField:
 
     # test of compute_value method
 
-    @pytest.mark.parametrize(('size', 'format_'), [
-        (4, 'B'),
-        (8, 'H'),
-        (16, 'I'),
-        (32, 'Q')
-    ])
+    @size_format_parametrize
     def test_should_compute_internal_field_part_value_when_calling_compute_value_method(self, size, format_):
         field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
         value = (8, 11)
@@ -608,6 +592,40 @@ class TestBitsField:
 
         assert b'hello' == remaining_data
         assert (8, 11) == field.value_as_tuple
+
+    # test of get_field_part_value method
+
+    @size_format_parametrize
+    def test_should_raise_error_if_name_is_not_present_in_field_parts(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        name = 'hello'
+        with pytest.raises(KeyError) as exc_info:
+            field.get_field_part_value(name)
+
+        assert f"'no field part was found with name {name}'" == str(exc_info.value)
+
+    @size_format_parametrize
+    def test_should_return_field_part_value_when_giving_correct_name(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        assert 4 == field.get_field_part_value('version')
+
+    # test of set_field_part_value
+
+    @size_format_parametrize
+    def test_should_raise_error_if_name_is_not_present_in_field_parts_when_setting_value(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        name = 'hello'
+        with pytest.raises(KeyError) as exc_info:
+            field.set_field_part_value(name, 6)
+
+        assert f"'no field part was found with name {name}'" == str(exc_info.value)
+
+    @size_format_parametrize
+    def test_should_set_field_part_value_when_giving_correct_name_and_value(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        field.set_field_part_value('version', 6)
+
+        assert (6, 5) == field.value_as_tuple
 
 
 class TestSpecializedBitsFields:
