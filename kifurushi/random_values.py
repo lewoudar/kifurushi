@@ -15,7 +15,7 @@ RIGHT_SIGNED_SHORT = 2 ** 15 - 1
 RIGHT_SIGNED_INT = 2 ** 31 - 1
 RIGHT_SIGNED_LONG = 2 ** 63 - 1
 
-# flake8 raises error B311 because it thinks we use random module for security/cryptographic purposes
+# flake8 raises B311 warnings because it thinks we use random module for security/cryptographic purposes
 # since it is not the case here, we can disable this error with confidence
 # more about the error here: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
 

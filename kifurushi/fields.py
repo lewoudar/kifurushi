@@ -358,7 +358,17 @@ class FieldPart:
 @attr.s(slots=True, repr=False)
 class BitsField(Field):
     """
-    A field representing bytes where a part represents flags like we have in IPV4 and TCP headers.
+    A field representing bytes where where some bits have a specific meaning like we can see in IPV4 or CTP headers.
+
+    ** Parameters: **
+
+    * **parts:** The list of FieldPart used to compose the field object.
+    * **format:** The `struct` format used to represent the field in its binary representation. Valid values are "B"
+    (1 byte), "H" (2 bytes), "I" (4 bytes) and "Q" (8 bytes).
+
+    For example, if we take the [IPV4 header](https://en.wikipedia.org/wiki/IPv4) the first byte contains two
+    information, the `version` (4 bits) and the `IHL` (4bits). To represent it we can define a field like the following:
+    `BitsField(FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')`
     """
     _parts: List[FieldPart] = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(FieldPart)
@@ -388,6 +398,7 @@ class BitsField(Field):
 
     @property
     def parts(self) -> List[FieldPart]:
+        """Returns the list of field parts of this field."""
         return self._parts
 
     @property
@@ -424,10 +435,12 @@ class BitsField(Field):
 
     @property
     def value(self) -> int:
+        """Returns the integer value corresponding to this field."""
         return self._get_int_value_from_field_parts()
 
     @property
     def value_as_tuple(self) -> Tuple[int, ...]:
+        """Returns the value of each field part in a tuple."""
         return tuple(part.value for part in self._parts)
 
     @value.setter
@@ -478,7 +491,7 @@ class BitsField(Field):
         return self._struct.pack(self.value)
 
     def random_value(self) -> int:
-        # flake8 raises error B311 because it thinks we use random module for security/cryptographic purposes
+        # flake8 raises a B311 warning because it thinks we use random module for security/cryptographic purposes
         # since it is not the case here, we can disable this error with confidence
         # more about the error here: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
         return random.randint(0, 2 ** (self._size * 8) - 1)  # nosec
@@ -491,19 +504,23 @@ class BitsField(Field):
 
 @attr.s(slots=True, repr=False)
 class ByteBitsField(BitsField):
+    """A specialized BitsField class dealing with one unsigned byte field."""
     _format: str = attr.ib(default='B', init=False)
 
 
 @attr.s(slots=True, repr=False)
 class ShortBitsField(BitsField):
+    """A specialized BitsField class dealing with a two unsigned bytes field."""
     _format: str = attr.ib(default='H', init=False)
 
 
 @attr.s(slots=True, repr=False)
 class IntBitsField(BitsField):
+    """A specialized BitsField class dealing with a four unsigned bytes field."""
     _format: str = attr.ib(default='I', init=False)
 
 
 @attr.s(slots=True, repr=False)
 class LongBitsField(BitsField):
+    """A specialized BitsField class dealing with an eight unsigned bytes field."""
     _format: str = attr.ib(default='Q', init=False)
