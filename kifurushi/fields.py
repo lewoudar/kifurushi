@@ -1,4 +1,4 @@
-"""This module contains different field implementation"""
+"""This module contains field implementations."""
 import enum
 import random
 import struct
@@ -100,6 +100,11 @@ class EnumMixin:
         ),
         enum_key_validator
     ])
+
+    @property
+    def enumeration(self) -> Dict[int, str]:
+        """Returns dict enumeration given friendly name to a specific value."""
+        return self._enumeration
 
 
 # Normal fields

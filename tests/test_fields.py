@@ -223,11 +223,11 @@ class TestEnumFields:
         ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField,
         IntEnumField, SignedIntEnumField, LongEnumField, SignedLongEnumField
     ])
-    def test_should_not_raise_error_when_enumeration_is_correct(self, enumeration, field_class):
-        try:
-            field_class('foo', 2, enumeration)
-        except TypeError:
-            pytest.fail(f'unexpected error when instantiating class with enumeration: {enumeration}')
+    def test_should_correctly_instantiate_enum_field(self, enumeration, field_class):
+        field = field_class('foo', 2, enumeration)
+        assert 'foo' == field.name
+        assert 2 == field.default == field.value
+        assert {1: 'mickey', 2: 'minnie'} == field.enumeration
 
 
 class TestFixedStringField:
