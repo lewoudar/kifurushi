@@ -510,6 +510,13 @@ class BitsField(Field):
         self.value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
 
+    def __getitem__(self, name: str) -> FieldPart:
+        """Returns FieldPart which name corresponds to the one passed as argument."""
+        for field_part in self._parts:
+            if field_part.name == name:
+                return field_part
+        raise KeyError(f'no field part was found with name {name}')
+
     def get_field_part_value(self, name: str) -> int:
         """
         Returns the value of a field part identified by its name.
@@ -518,11 +525,7 @@ class BitsField(Field):
 
         * **name:** The name of the field part whose value is requested.
         """
-        mapping = {field_part.name: field_part for field_part in self._parts}
-        if name not in mapping:
-            raise KeyError(f'no field part was found with name {name}')
-
-        return mapping[name].value
+        return self[name].value
 
     def set_field_part_value(self, name: str, value: int) -> None:
         """
@@ -533,11 +536,7 @@ class BitsField(Field):
         * **name:** The name of the field part whose value must be set.
         * **value:** The value to set to the field part.
         """
-        mapping = {field_part.name: field_part for field_part in self._parts}
-        if name not in mapping:
-            raise KeyError(f'no field part was found with name {name}')
-
-        mapping[name].value = value
+        self[name].value = value
 
 
 @attr.s(slots=True, repr=False)

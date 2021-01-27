@@ -592,6 +592,23 @@ class TestBitsField:
         assert b'hello' == remaining_data
         assert (8, 11) == field.value_as_tuple
 
+    # test of __getitem__ method
+
+    @size_format_parametrize
+    def test_should_raise_error_when_trying_to_access_field_part_giving_a_wrong_name(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        with pytest.raises(KeyError) as exc_info:
+            assert field['foo']
+
+        assert f"'no field part was found with name foo'" == str(exc_info.value)
+
+    @size_format_parametrize
+    def test_should_return_field_part_given_its_name(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        field_part = field['IHL']
+
+        assert field_part.name == 'IHL'
+
     # test of get_field_part_value method
 
     @size_format_parametrize
