@@ -2,6 +2,7 @@
 import enum
 import random
 import struct
+from copy import copy
 from typing import Dict, Any, Union, Optional, List, Tuple
 
 import attr
@@ -356,6 +357,9 @@ class FieldPart:
         """Returns dict enumeration given friendly name to a specific value."""
         return self._enumeration
 
+    def clone(self) -> 'FieldPart':
+        return copy(self)
+
     def __repr__(self):
         if self._enumeration is not None:
             value = self._enumeration.get(self._value, self._value)
@@ -516,6 +520,12 @@ class BitsField(Field):
             if field_part.name == name:
                 return field_part
         raise KeyError(f'no field part was found with name {name}')
+
+    def clone(self) -> 'BitsField':
+        """Returns a copy if the field ensuring that parts attribute of the cloned object is not a shallow copy."""
+        cloned_field = copy(self)
+        cloned_field._parts = [part.clone() for part in self._parts]
+        return cloned_field
 
     def get_field_part_value(self, name: str) -> int:
         """

@@ -393,6 +393,15 @@ class TestFieldPart:
 
         assert representation == repr(part)
 
+    # test of clone method
+
+    def test_should_return_a_correct_copy_of_field_part_when_calling_clone_method(self):
+        part = FieldPart('part', 2, 3)
+        cloned_part = part.clone()
+
+        assert cloned_part == part
+        assert cloned_part is not part
+
 
 class TestBitsField:
     """Tests class BitsField"""
@@ -564,6 +573,9 @@ class TestBitsField:
 
         assert cloned_field == field
         assert cloned_field is not field
+        # check the parts attribute of cloned field is not a shallow copy
+        for i, part in enumerate(cloned_field.parts):
+            assert part is not field.parts[i]
 
     # test of random_value method
 
