@@ -86,6 +86,16 @@ class TestCommonField:
         with pytest.raises(TypeError):
             DummyField(**arguments)
 
+    @pytest.mark.parametrize('name', [' hello', 'hello ', 'foo-bar', 'f@o'])
+    def test_should_raise_error_when_given_name_is_not_correct(self, name):
+        with pytest.raises(ValueError) as exc_info:
+            DummyField(name, 2, format='b')
+
+        assert (
+            'DummyField name must starts with a letter and follow standard'
+            f' rules for declaring a variable in python but you provided {name}'
+        ) == str(exc_info.value)
+
     # tests format attribute
 
     @pytest.mark.parametrize('_format', ['o', 'xs'])
@@ -190,6 +200,16 @@ class TestVariableStringField:
     def test_should_raise_error_when_name_is_not_a_string(self, name):
         with pytest.raises(TypeError):
             DummyStringField(name)
+
+    @pytest.mark.parametrize('name', [' hello', 'hello ', 'foo-bar', 'f@o'])
+    def test_should_raise_error_when_giving_name_is_not_correct(self, name):
+        with pytest.raises(ValueError) as exc_info:
+            DummyStringField(name)
+
+        assert (
+            'DummyStringField name must starts with a letter and follow standard'
+            f' rules for declaring a variable in python but you provided {name}'
+        ) == str(exc_info.value)
 
     # noinspection PyTypeChecker
     @pytest.mark.parametrize('default', [b'hello', 4.3])

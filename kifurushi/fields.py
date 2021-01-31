@@ -7,7 +7,7 @@ from typing import Dict, Any, Union, Optional, List, Tuple
 
 import attr
 
-from .abc import Field, CommonField
+from .abc import Field, CommonField, name_validator
 from .random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
     LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT, LEFT_INT, RIGHT_INT, LEFT_SIGNED_INT, RIGHT_SIGNED_INT,
@@ -303,7 +303,7 @@ class FieldPart(HexMixin):
     * **enumeration:** A `dict` or `enum.Enum` enumeration given friendly name to a specific value. This
     attribute is optional.
     """
-    _name: str = attr.ib(validator=attr.validators.instance_of(str))
+    _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     _default: int = attr.ib(validator=attr.validators.instance_of(int))
     _size: int = attr.ib(validator=attr.validators.instance_of(int))
     _value: int = attr.ib(init=False)
@@ -390,7 +390,7 @@ class FieldPart(HexMixin):
 @attr.s(slots=True, repr=False)
 class BitsField(HexMixin, Field):
     """
-    A field representing bytes where where some bits have a specific meaning like we can see in IPV4 or CTP headers.
+    A field representing bytes where where some bits have a specific meaning like we can see in IPV4 or TCP headers.
 
     **Parameters:**
 

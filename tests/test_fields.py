@@ -341,6 +341,16 @@ class TestFieldPart:
         with pytest.raises(TypeError):
             FieldPart(name, 2, 2)
 
+    @pytest.mark.parametrize('name', [' hello', 'hello ', 'foo-bar', 'f@o'])
+    def test_should_raise_error_when_given_name_is_not_correct(self, name):
+        with pytest.raises(ValueError) as exc_info:
+            FieldPart(name, 2, 2)
+
+        assert (
+           'FieldPart name must starts with a letter and follow standard'
+           f' rules for declaring a variable in python but you provided {name}'
+       ) == str(exc_info.value)
+
     @pytest.mark.parametrize('default', [4.5, '4'])
     def test_should_raise_error_when_default_is_not_an_integer(self, default):
         with pytest.raises(TypeError):

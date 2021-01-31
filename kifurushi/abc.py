@@ -1,5 +1,6 @@
 """Module which contains base abstract classes"""
 import copy
+import string
 import struct
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Union
@@ -70,10 +71,24 @@ class Field(ABC):
         pass
 
 
+def name_validator(field: Field, _, name: str) -> None:
+    message = (
+        f'{field.__class__.__name__} name must starts with a letter and follow standard rules for declaring'
+        f' a variable in python but you provided {name}'
+    )
+    punctuation = string.punctuation.replace('_', '')
+    if not name[0].isalpha() or not name[-1].isalnum():
+        raise ValueError(message)
+
+    for character in punctuation:
+        if character in name:
+            raise ValueError(message)
+
+
 # noinspection PyAbstractClass
 @attr.s(repr=False)
 class CommonField(Field):
-    _name: str = attr.ib(validator=attr.validators.instance_of(str))
+    _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     _default: Any = attr.ib()
     _value: Any = attr.ib(init=False)
     _format: str = attr.ib(
@@ -173,7 +188,7 @@ class VariableStringField(Field):
     * **order:** Order used to format raw data using `struct` module. Defaults to "!" (network). Valid values are
     "!", "<" (little-endian), ">" (big-endian), "@" (native), "=" (standard).
     """
-    _name: str = attr.ib(validator=attr.validators.instance_of(str))
+    _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     _default: str = attr.ib(default='kifurushi', validator=attr.validators.instance_of(str))
     _max_length: Optional[int] = attr.ib(
         default=None, validator=attr.validators.optional(attr.validators.instance_of(int))
