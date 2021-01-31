@@ -65,8 +65,7 @@ class NumericField(HexMixin, CommonField):
     _default: int = attr.ib(validator=[attr.validators.instance_of(int), numeric_validator])
     _value: int = attr.ib(init=False, validator=[attr.validators.instance_of(int), numeric_validator])
 
-    # noinspection PyUnresolvedReferences
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
         self._value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
 
@@ -263,8 +262,7 @@ class FixedStringField(CommonField):
         self._length = length
         super().__init__(name, default, format=f'{length}s')
 
-    # noinspection PyUnresolvedReferences
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
         """Sets internal string value and returns remaining bytes."""
         value: bytes = self._struct.unpack(data[:self._size])[0]
         self._value = value.decode()
@@ -530,13 +528,12 @@ class BitsField(HexMixin, Field):
         return self._struct.pack(self.value)
 
     def random_value(self) -> int:
-        # flake8 raises a B311 warning because it thinks we use random module for security/cryptographic purposes
+        # bandit raises a B311 warning because it thinks we use random module for security/cryptographic purposes
         # since it is not the case here, we can disable this error with confidence
         # more about the error here: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
         return random.randint(0, 2 ** (self._size * 8) - 1)  # nosec
 
-    # noinspection PyUnresolvedReferences
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
         """Sets internal value of each field part and returns remaining bytes."""
         self.value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
