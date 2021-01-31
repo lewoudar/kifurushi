@@ -53,6 +53,11 @@ class HexMixin:
         default = hex(self._default) if self._hex else self._default
         return f'<{self.__class__.__name__}: name={self._name}, value={value}, default={default}>'
 
+    @property
+    def hex(self) -> bool:
+        """Returns hex property value."""
+        return self._hex
+
 
 @attr.s(repr=False)
 class NumericField(HexMixin, CommonField):
@@ -60,6 +65,7 @@ class NumericField(HexMixin, CommonField):
     _default: int = attr.ib(validator=[attr.validators.instance_of(int), numeric_validator])
     _value: int = attr.ib(init=False, validator=[attr.validators.instance_of(int), numeric_validator])
 
+    # noinspection PyUnresolvedReferences
     def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         self._value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
@@ -257,6 +263,7 @@ class FixedStringField(CommonField):
         self._length = length
         super().__init__(name, default, format=f'{length}s')
 
+    # noinspection PyUnresolvedReferences
     def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         """Sets internal string value and returns remaining bytes."""
         value: bytes = self._struct.unpack(data[:self._size])[0]
@@ -286,7 +293,7 @@ class FixedStringField(CommonField):
 
 
 @attr.s(slots=True, repr=False)
-class FieldPart:
+class FieldPart(HexMixin):
     """
     This class represents information to combine to form a BitsField object (signed byte, signed short, etc..).
 
@@ -353,6 +360,18 @@ class FieldPart:
         return self._size
 
     @property
+    def hex(self) -> bool:
+        """Returns hex property value."""
+        return self._hex
+
+    @hex.setter
+    def hex(self, value: bool) -> None:
+        """Sets hex property value"""
+        if not isinstance(value, bool):
+            raise TypeError(f'hex value must be a boolean but you provided {value}')
+        self._hex = value
+
+    @property
     def enumeration(self) -> Optional[Dict[int, str]]:
         """Returns dict enumeration given friendly name to a specific value."""
         return self._enumeration
@@ -363,13 +382,15 @@ class FieldPart:
     def __repr__(self):
         if self._enumeration is not None:
             value = self._enumeration.get(self._value, self._value)
+            default = self._enumeration.get(self._default, self._default)
         else:
-            value = self._value
-        return f'{self.__class__.__name__}(name={self._name}, default={self._default}, value={value})'
+            value = hex(self._value) if self._hex else self._value
+            default = hex(self._default) if self._hex else self._default
+        return f'{self.__class__.__name__}(name={self._name}, default={default}, value={value})'
 
 
 @attr.s(slots=True, repr=False)
-class BitsField(Field):
+class BitsField(HexMixin, Field):
     """
     A field representing bytes where where some bits have a specific meaning like we can see in IPV4 or CTP headers.
 
@@ -408,6 +429,11 @@ class BitsField(Field):
                 f'the sum in bits of the different FieldPart ({parts_size}) is different'
                 f' from the field size ({field_size_in_bits})'
             )
+        # if hexadecimal representation is needed for this field, we need to forward
+        # this information to all field parts
+        if self._hex:
+            for part in self._parts:
+                part.hex = self._hex
 
     @property
     def parts(self) -> List[FieldPart]:
@@ -509,6 +535,7 @@ class BitsField(Field):
         # more about the error here: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
         return random.randint(0, 2 ** (self._size * 8) - 1)  # nosec
 
+    # noinspection PyUnresolvedReferences
     def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         """Sets internal value of each field part and returns remaining bytes."""
         self.value = self._struct.unpack(data[:self._size])[0]

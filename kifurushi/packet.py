@@ -136,14 +136,16 @@ class Packet:
         return cloned_packet
 
     def __repr__(self):
-        representation = '<Packet: '
+        representation = f'<{self.__class__.__name__}: '
         template = '{name}={value}, '
         for field in self._fields:
             if isinstance(field, BitsField):
                 for field_part in field.parts:
-                    representation += template.format(name=field_part.name, value=field_part.value)
+                    value = hex(field_part.value) if field_part.hex else field_part.value
+                    representation += template.format(name=field_part.name, value=value)
             else:
-                representation += template.format(name=field.name, value=field.value)
+                value = hex(field.value) if field.hex else field.value
+                representation += template.format(name=field.name, value=value)
         representation = representation[:-2]
         return f'{representation}>'
 
@@ -157,14 +159,18 @@ class Packet:
             class_name = field.__class__.__name__
             if isinstance(field, BitsField):
                 for field_part in field.parts:
+                    value = hex(field_part.value) if field_part.hex else field_part.value
+                    default = hex(field_part.default) if field_part.hex else field_part.default
                     representation += template.format(
                         name=field_part.name.ljust(max_length),
                         type=f'{field_part.__class__.__name__} of {class_name}',
-                        value=field_part.value,
-                        default=field_part.default
+                        value=value,
+                        default=default
                     )
             else:
+                value = hex(field.value) if field.hex else field.value
+                default = hex(field.default) if field.hex else field.default
                 representation += template.format(
-                    name=field.name.ljust(max_length), type=class_name, value=field.value, default=field.default
+                    name=field.name.ljust(max_length), type=class_name, value=value, default=default
                 )
         print(representation, end='')

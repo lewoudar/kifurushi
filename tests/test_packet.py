@@ -37,7 +37,7 @@ def mini_ip_fields() -> List[Field]:
         ByteBitsField([FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)]),
         ShortField('length', 20),
         ShortEnumField('identification', 1, Identification),
-        ShortBitsField([FieldPart('flags', 0b010, 3, Flags), FieldPart('offset', 0, 13)]),
+        ShortBitsField([FieldPart('flags', 0b010, 3, Flags), FieldPart('offset', 0, 13)], hex=True),
     ]
 
 
@@ -188,14 +188,28 @@ class TestPacket:
 
     # test of __repr__ method
 
-    def test_should_return_correct_packet_representation_when_calling_repr_function(self, mini_ip_fields):
+    @pytest.mark.parametrize(('value', 'hexadecimal'), [
+        (20, False),
+        ('0x14', True)
+    ])
+    def test_should_return_correct_packet_representation_when_calling_repr_function(
+            self, mini_ip_fields, value, hexadecimal
+    ):
         packet = Packet(mini_ip_fields)
-        assert '<Packet: version=4, IHL=5, length=20, identification=1, flags=2, offset=0>' == repr(packet)
+        mini_ip_fields[1]._hex = hexadecimal
+        assert f'<Packet: version=4, IHL=5, length={value}, identification=1, flags=0x2, offset=0x0>' == repr(packet)
 
     # test of show method
 
-    def test_should_print_correct_packet_representation_when_calling_show_method(self, capsys, mini_ip_fields):
+    @pytest.mark.parametrize(('value_1', 'value_2', 'hexadecimal'), [
+        (18, 20, False),
+        ('0x12', '0x14', True)
+    ])
+    def test_should_print_correct_packet_representation_when_calling_show_method(
+            self, capsys, mini_ip_fields, value_1, value_2, hexadecimal
+    ):
         packet = Packet(mini_ip_fields)
+        mini_ip_fields[1]._hex = hexadecimal
         packet.length = 18
         packet.IHL = 6
         packet.show()
@@ -203,10 +217,10 @@ class TestPacket:
         output = (
             'version        : FieldPart of ByteBitsField = 4 (4)\n'
             'IHL            : FieldPart of ByteBitsField = 6 (5)\n'
-            'length         : ShortField = 18 (20)\n'
+            f'length         : ShortField = {value_1} ({value_2})\n'
             'identification : ShortEnumField = 1 (1)\n'
-            'flags          : FieldPart of ShortBitsField = 2 (2)\n'
-            'offset         : FieldPart of ShortBitsField = 0 (0)\n'
+            'flags          : FieldPart of ShortBitsField = 0x2 (0x2)\n'
+            'offset         : FieldPart of ShortBitsField = 0x0 (0x0)\n'
         )
 
         assert captured.out == output

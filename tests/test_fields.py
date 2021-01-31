@@ -2,6 +2,7 @@ import enum
 import struct
 from typing import Tuple
 
+import attr
 import pytest
 
 from kifurushi.abc import Field
@@ -9,7 +10,7 @@ from kifurushi.fields import (
     ByteField, SignedByteField, ShortField, SignedShortField, IntField, SignedIntField, LongField, SignedLongField,
     enum_to_dict, ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField, IntEnumField,
     SignedIntEnumField, LongEnumField, SignedLongEnumField, FixedStringField, FieldPart, BitsField, ByteBitsField,
-    ShortBitsField, IntBitsField, LongBitsField
+    ShortBitsField, IntBitsField, LongBitsField, HexMixin
 )
 from kifurushi.random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
@@ -53,6 +54,29 @@ WITHIN_BOUNDARIES = [
     (SignedLongField, LEFT_SIGNED_LONG),
     (SignedLongField, RIGHT_SIGNED_LONG)
 ]
+
+
+@attr.s
+class DummyHex(HexMixin):
+    pass
+
+
+@pytest.fixture()
+def hex_object():
+    """Returns an object useful to test hexadecimal (hex) property."""
+    return DummyHex()
+
+
+class TestHexMixin:
+    """Tests class HexMixin"""
+
+    # noinspection PyArgumentList
+    def test_should_raise_error_when_instantiating_hex_attribute_without_keyword_argument(self):
+        with pytest.raises(TypeError):
+            DummyHex(True)
+
+    def test_should_return_false_when_calling_hex_property(self, hex_object):
+        assert not hex_object.hex
 
 
 # noinspection PyArgumentList
@@ -116,7 +140,7 @@ class TestNumericField:
         assert 2 == field.default == field.value
         assert struct_format == field.struct_format
         assert size == field.size
-        assert not field._hex
+        assert not field.hex
 
     @pytest.mark.parametrize('hexadecimal', [True, False])
     @pytest.mark.parametrize('field_class', [
@@ -356,11 +380,27 @@ class TestFieldPart:
         assert 2 == part.default == part.value
         assert 3 == part.size
         assert {1: 'MF', 2: 'DF', 4: 'reserved'} == part.enumeration
+        assert not part.hex
+
+    # test of hex property
+
+    @pytest.mark.parametrize('value', [1, 'yes'])
+    def test_should_raise_error_when_giving_incorrect_value_to_hex_property(self, value):
+        part = FieldPart('flags', 0b010, 3)
+        with pytest.raises(TypeError) as exc_info:
+            part.hex = value
+
+        assert f'hex value must be a boolean but you provided {value}' == str(exc_info.value)
+
+    def test_should_set_hex_property_when_giving_correct_value(self):
+        part = FieldPart('flags', 0b010, 3)
+        part.hex = True
+        assert part.hex
 
     # test of value property
 
     @pytest.mark.parametrize('value', [b'value', 4.5])
-    def test_should_raise_error_when_value_set_is_not_of_correct_type(self, value):
+    def test_should_raise_error_when_given_value_is_not_of_correct_type(self, value):
         part = FieldPart('banana', 2, 3)
         with pytest.raises(TypeError) as exc_info:
             part.value = value
@@ -384,12 +424,14 @@ class TestFieldPart:
 
     # test of __repr__ method
 
-    @pytest.mark.parametrize(('enumeration', 'representation'), [
-        ({1: 'MF', 2: 'DF', 4: 'reserved'}, 'FieldPart(name=flags, default=2, value=DF)'),
-        (None, 'FieldPart(name=flags, default=2, value=2)')
+    @pytest.mark.parametrize(('enumeration', 'representation', 'hexadecimal'), [
+        ({1: 'MF', 4: 'reserved', 20: 'DF', 17: 'danger'}, 'FieldPart(name=flags, default=DF, value=danger)', False),
+        (None, 'FieldPart(name=flags, default=20, value=17)', False),
+        (None, 'FieldPart(name=flags, default=0x14, value=0x11)', True)
     ])
-    def test_should_correctly_represent_field_part(self, enumeration, representation):
-        part = FieldPart('flags', 0b010, 3, enumeration)
+    def test_should_correctly_represent_field_part(self, enumeration, representation, hexadecimal):
+        part = FieldPart('flags', 20, 6, enumeration, hex=hexadecimal)
+        part.value = 17
 
         assert representation == repr(part)
 
@@ -406,8 +448,9 @@ class TestFieldPart:
 class TestBitsField:
     """Tests class BitsField"""
 
-    def test_should_prove_class_inherit_base_field_class(self):
+    def test_should_prove_class_inherit_base_field_class_and_hex_mixin(self):
         assert issubclass(BitsField, Field)
+        assert issubclass(BitsField, HexMixin)
 
     @pytest.mark.parametrize(('parts', 'error'), [
         ({'foo': 2}, TypeError),
@@ -457,13 +500,18 @@ class TestBitsField:
         assert 1 == field.size
         assert '!B' == field.struct_format
         assert self.get_int_from_tuple(4, (4, 5)) == field.default
+        assert not field.hex
 
-    def test_should_correctly_represent_bits_field(self):
+    @pytest.mark.parametrize(('value_1', 'value_2', 'hexadecimal'), [
+        (4, 5, False),
+        ('0x4', '0x5', True)
+    ])
+    def test_should_correctly_represent_bits_field(self, value_1, value_2, hexadecimal):
         field_parts = [FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)]
-        field = BitsField(parts=field_parts, format='B')
+        field = BitsField(parts=field_parts, format='B', hex=hexadecimal)
 
-        assert ('BitsField(FieldPart(name=version, default=4, value=4),'
-                ' FieldPart(name=IHL, default=5, value=5))') == repr(field)
+        assert (f'BitsField(FieldPart(name=version, default={value_1}, value={value_1}),'
+                f' FieldPart(name=IHL, default={value_2}, value={value_2}))') == repr(field)
 
     # test of value_as_tuple property
 
