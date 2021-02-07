@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "kifurushi"
 version = "0.1.0"
-description = "Simple library to forge network data"
+description = "A simple library to forge network packets"
 authors = ["lewoudar <lewoudar@gmail.com>"]
 
 [tool.poetry.dependencies]
