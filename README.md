@@ -68,7 +68,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print(received_packet)
 ```
 
-To see more protocol implementations check the folder *examples* of the project.
+To see more protocol implementations check the folder [examples](examples) of the project.
 
 ## Warnings
 
