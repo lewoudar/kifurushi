@@ -1,26 +1,22 @@
 """This module defines the base Packet class and helper functions."""
 import enum
-from typing import List, Dict, Union
-
-import attr
+from copy import copy
+from typing import Iterable, Dict, Union, Any, Callable, List
 
 from .abc import Field, CommonField
 from .fields import BitsField, FieldPart
 
 
-# TODO: implement name verification in the field module (no "-" or space)
-
-
-@attr.s(repr=False)
 class Packet:
-    _fields: List[Field] = attr.ib(validator=attr.validators.deep_iterable(
-        member_validator=attr.validators.instance_of(Field)
-    ))
-    _field_mapping: Dict[str, Field] = attr.ib(init=False, factory=dict)
-    _attribute_error: str = attr.ib(init=False, default='{packet} has no attribute {attribute}')
+    __fields__: Iterable[Field] = None
 
-    def __attrs_post_init__(self):
+    def __init__(self, **kwargs):
+        self._fields = [field.clone() for field in self.__fields__]
         self._field_mapping = self._create_field_mapping(self._fields)
+        self._check_arguments(kwargs)
+        value_mapping = {**self._get_default_values(), **kwargs}
+        for name, value in value_mapping.items():
+            setattr(self, name, value)
 
     @staticmethod
     def _create_field_mapping(fields: List[Field]) -> Dict[str, Field]:
@@ -31,49 +27,102 @@ class Packet:
                     field_mapping[field_part.name] = field
             else:
                 field_mapping[field.name] = field
+
         return field_mapping
 
-    def __getattr__(self, item: str):
-        if item not in self._field_mapping:
-            raise AttributeError(self._attribute_error.format(packet=self.__class__.__name__, attribute=item))
+    def _check_arguments(self, arguments: Dict[str, Any]) -> None:
+        for argument in arguments:
+            if argument not in self._field_mapping:
+                raise AttributeError(f'there is no attribute with name {argument}')
 
-        field = self._field_mapping[item]
-        if isinstance(field, BitsField):
-            return field.get_field_part_value(item)
-        else:
-            return field.value
+    def _get_default_values(self) -> Dict[str, Union[str, int]]:
+        result = {}
+        for name, field in self._field_mapping.items():
+            if isinstance(field, BitsField):
+                result[name] = field[name].value
+            else:
+                result[name] = field.value
+
+        return result
 
     @staticmethod
-    def _set_enum_field(field: Union[CommonField, FieldPart], value: Union[int, str, enum.Enum]):
+    def _set_packet_attributes(packet: 'Packet') -> None:
+        for name, field in packet._field_mapping.items():
+            value = field[name].value if isinstance(field, BitsField) else field.value
+            setattr(packet, name, value)
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> 'Packet':
+        """
+        Creates a packet from bytes and returns it.
+
+        **Parameters:**
+
+        **data:** The raw bytes used to construct a packet object.
+        """
+        packet = cls()
+        for field in packet._fields:
+            data = field.compute_value(data, packet)
+
+        cls._set_packet_attributes(packet)
+        return packet
+
+    @classmethod
+    def random_packet(cls) -> 'Packet':
+        """Returns a packet with fields having random values."""
+        packet = cls()
+        for field in packet._fields:
+            field.value = field.random_value()
+
+        cls._set_packet_attributes(packet)
+        return packet
+
+    @property
+    def fields(self) -> List[Field]:
+        """Returns a copy of the list of fields composing the packet object."""
+        return [field.clone() for field in self._fields]
+
+    @staticmethod
+    def _set_enum_field(
+            field: Union[CommonField, FieldPart],
+            value: Union[int, str, enum.Enum],
+            set_attr: Callable[[str, Any], None]
+    ) -> None:
         if isinstance(value, str):
             found = False
-            for key, name in field.enumeration.items():
-                if name == value:
-                    field.value = key
-                    found = True
-                    break
+            if field.enumeration is not None:
+                for key, name in field.enumeration.items():
+                    if name == value:
+                        field.value = key
+                        found = True
+                        break
             if not found:
                 raise ValueError(f'{field.name} has no value represented by {value}')
+
         elif isinstance(value, enum.Enum):
             field.value = value.value
         else:
             field.value = value
 
-    def __setattr__(self, name: str, value: Union[int, str, enum.Enum]):
-        if name in ['_fields', '_field_mapping', '_attribute_error']:
-            return super().__setattr__(name, value)
+        set_attr(field.name, field.value)
 
-        if name not in self._field_mapping:
-            raise AttributeError(self._attribute_error.format(packet=self.__class__.__name__, attribute=name))
+    def __setattr__(self, name: str, value: Union[int, str, enum.Enum]):
+        super_set_attr = super().__setattr__
+        # if name does not represent a field, we directly call the parent __setattr__ method without
+        # further processing
+        if name in ['_fields', '_field_mapping'] or name not in self._field_mapping:
+            super_set_attr(name, value)
+            return
 
         field = self._field_mapping[name]
         if isinstance(field, BitsField):
-            self._set_enum_field(field[name], value)
+            self._set_enum_field(field[name], value, super_set_attr)
 
         elif isinstance(field, CommonField) and hasattr(field, '_enumeration'):
-            self._set_enum_field(field, value)
+            self._set_enum_field(field, value, super_set_attr)
         else:
             field.value = value
+            super_set_attr(name, value)
 
     @property
     def raw(self) -> bytes:
@@ -120,24 +169,42 @@ class Packet:
         result = result[:-1] if result.endswith('\n') else result
         return result
 
+    def __eq__(self, other: Any):
+        if not isinstance(other, self.__class__):
+            raise NotImplementedError
+        return self.raw == other.raw
+
+    def __ne__(self, other: Any):
+        return not self.__eq__(other)
+
     def clone(self) -> 'Packet':
         """Returns a copy of the packet."""
-        cloned_packet = attr.evolve(self)
-        fields = [field.clone() for field in self._fields]
-        cloned_packet._fields = fields
-        cloned_packet._field_mapping = self._create_field_mapping(fields)
+        cloned_packet = copy(self)
+        cloned_fields = self.fields
+        cloned_packet._fields = cloned_fields
+        cloned_packet._field_mapping = self._create_field_mapping(cloned_fields)
+
         return cloned_packet
 
-    def get_packet_from_bytes(self, data: bytes) -> 'Packet':
-        """Parses raw bytes object and returns a Packet instance corresponding to the given bytes."""
+    def evolve(self, **kwargs) -> 'Packet':
+        """
+        Returns a new packet with attributes updated by arguments passed as input.
+
+        **Parameters:**
+
+        **kwargs:** keyword-only arguments representing packet attributes with the value to set on them.
+        """
+        self._check_arguments(kwargs)
         cloned_packet = self.clone()
-        for field in cloned_packet._fields:
-            data = field.compute_value(data, self)
+        for field, value in kwargs.items():
+            setattr(cloned_packet, field, value)
+
         return cloned_packet
 
     def __repr__(self):
         representation = f'<{self.__class__.__name__}: '
         template = '{name}={value}, '
+
         for field in self._fields:
             if isinstance(field, BitsField):
                 for field_part in field.parts:
@@ -146,15 +213,17 @@ class Packet:
             else:
                 value = hex(field.value) if field.hex else field.value
                 representation += template.format(name=field.name, value=value)
+
         representation = representation[:-2]
         return f'{representation}>'
 
-    def show(self):
+    def show(self) -> None:
         """Prints a clarified state of packet with type, current and default values of every field."""
         representation = ''
         template = '{name} : {type} = {value} ({default})\n'
         names = sorted(self._field_mapping.keys(), key=len)
         max_length = len(names[-1])
+
         for field in self._fields:
             class_name = field.__class__.__name__
             if isinstance(field, BitsField):
@@ -174,3 +243,25 @@ class Packet:
                     name=field.name.ljust(max_length), type=class_name, value=value, default=default
                 )
         print(representation, end='')
+
+
+def create_packet_class(name: str, fields: Iterable[Field]) -> type(Packet):
+    """
+    Creates and returns a packet class.
+
+    **Parameters:**
+
+    **name:** The name of the class to create.
+    **fields:** An iterable of fields that compose the packet.
+    """
+    if not isinstance(name, str):
+        raise TypeError(f'class name must be a string but you provided {name}')
+
+    if not fields:
+        raise ValueError('the list of fields must not be empty')
+
+    for field in fields:
+        if not isinstance(field, Field):
+            raise TypeError(f'each item in the list must be a Field object but you provided {field}')
+
+    return type(name, (Packet,), {'__fields__': fields})
