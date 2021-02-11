@@ -1,3 +1,4 @@
+"""Module which contains different random functions and constants useful when handling field values."""
 import random
 import string
 

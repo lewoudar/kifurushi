@@ -1,12 +1,17 @@
 import pytest
-from scapy.all import *
+from scapy.compat import raw
+from scapy.fields import BitField, ShortField, ShortEnumField, FlagsField
+from scapy.packet import Packet
+from scapy.utils import hexdump
+
+from .helpers import MiniIP
 
 
 @pytest.fixture(scope='session')
 def mini_ip():
     """Returns a scapy packet used to check validity of kifurushi packet."""
 
-    class MiniIP(Packet):
+    class ScapyMiniIP(Packet):
         name = 'mini ip'
         fields_desc = [
             BitField('version', 4, 4),
@@ -17,7 +22,7 @@ def mini_ip():
             BitField('frag', 0, 13),
         ]
 
-    return MiniIP()
+    return ScapyMiniIP()
 
 
 @pytest.fixture(scope='session')
@@ -30,3 +35,9 @@ def raw_mini_ip(mini_ip):
 def mini_ip_hexdump(mini_ip):
     """Returns tcpdump like hexadecimal view of mini_ip packet."""
     return hexdump(mini_ip, dump=True)
+
+
+@pytest.fixture()
+def custom_ip():
+    """An instance of our custom MiniIP class used to validate Packet class implementation."""
+    return MiniIP()

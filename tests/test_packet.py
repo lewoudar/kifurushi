@@ -1,4 +1,3 @@
-import enum
 from typing import List
 
 import pytest
@@ -7,18 +6,7 @@ from kifurushi.abc import VariableStringField, Field
 from kifurushi.fields import FieldPart, ByteBitsField, ShortField, ShortEnumField, ShortBitsField, FixedStringField
 from kifurushi.packet import create_packet_class, Packet
 from kifurushi.utils.random_values import RIGHT_SHORT
-
-
-class Flags(enum.Enum):
-    reserved = 0
-    df = 1
-    mf = 2
-
-
-class Identification(enum.Enum):
-    lion = 1
-    turtle = 5
-    python = 7
+from tests.helpers import Identification, Flags, MiniIP
 
 
 class CustomStringField(VariableStringField):
@@ -76,22 +64,6 @@ class TestCreatePacketClass:
             mini_ip_class = create_packet_class('MiniIP', fields)
             assert issubclass(mini_ip_class, Packet)
             assert mini_ip_class.__fields__ == fields
-
-
-class MiniIP(Packet):
-    # noinspection PyArgumentList
-    __fields__ = [
-        ByteBitsField([FieldPart('version', 4, 4), FieldPart('ihl', 5, 4)]),
-        ShortField('length', 20),
-        ShortEnumField('identification', 1, Identification),
-        ShortBitsField([FieldPart('flags', 0b010, 3, Flags), FieldPart('offset', 0, 13)], hex=True),
-    ]
-
-
-@pytest.fixture()
-def custom_ip():
-    """An instance of our custom MiniIP class used to validate Packet class implementation."""
-    return MiniIP()
 
 
 # noinspection PyArgumentList
