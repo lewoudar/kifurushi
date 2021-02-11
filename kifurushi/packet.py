@@ -3,6 +3,7 @@ import enum
 from copy import copy
 from typing import Iterable, Dict, Union, Any, Callable, List
 
+from kifurushi.utils.network import hexdump
 from .abc import Field, CommonField
 from .fields import BitsField, FieldPart
 
@@ -132,42 +133,10 @@ class Packet:
     def __bytes__(self):
         return self.raw
 
-    @staticmethod
-    def _smart_ord(value: Union[int, str]) -> int:
-        if isinstance(value, int):
-            return value
-        return ord(value)
-
-    def _sane_value(self, value: Union[int, str]) -> str:
-        result = ''
-        for i in value:
-            j = self._smart_ord(i)
-            if (j < 32) or (j >= 127):
-                result += '.'
-            else:
-                result += chr(j)
-        return result
-
     @property
     def hexdump(self) -> str:
         """Returns tcpdump / wireshark like hexadecimal view of the packet."""
-        result = ''
-        raw = self.raw
-        raw_length = len(raw)
-        i = 0
-
-        while i < raw_length:
-            result += '%04x  ' % i
-            for j in range(16):
-                if i + j < raw_length:
-                    result += '%02X ' % self._smart_ord(raw[i + j])
-                else:
-                    result += '   '
-            result += ' %s\n' % self._sane_value(raw[i:i + 16])
-            i += 16
-        # remove trailing \n
-        result = result[:-1] if result.endswith('\n') else result
-        return result
+        return hexdump(self.raw)
 
     def __eq__(self, other: Any):
         if not isinstance(other, self.__class__):

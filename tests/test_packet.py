@@ -169,15 +169,6 @@ class TestPacketClass:
     def test_should_return_byte_value_when_calling_bytes_builtin_function(self, custom_ip):
         assert bytes(custom_ip) == custom_ip.raw
 
-    # test of _smart_ord method
-
-    @pytest.mark.parametrize(('argument', 'value'), [
-        (65, 65),
-        ('A', 65)
-    ])
-    def test_should_return_correct_value_when_giving_correct_input(self, custom_ip, argument, value):
-        assert value == custom_ip._smart_ord(argument)
-
     # test of hexdump property
 
     def test_should_return_correct_hexadecimal_wireshark_view_when_calling_hexdump(self, custom_ip, mini_ip_hexdump):
