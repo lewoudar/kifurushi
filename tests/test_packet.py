@@ -6,7 +6,7 @@ import pytest
 from kifurushi.abc import VariableStringField, Field
 from kifurushi.fields import FieldPart, ByteBitsField, ShortField, ShortEnumField, ShortBitsField, FixedStringField
 from kifurushi.packet import create_packet_class, Packet
-from kifurushi.random_values import RIGHT_SHORT
+from kifurushi.utils.random_values import RIGHT_SHORT
 
 
 class Flags(enum.Enum):

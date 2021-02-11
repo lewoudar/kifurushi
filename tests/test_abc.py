@@ -4,7 +4,7 @@ import attr
 import pytest
 
 from kifurushi.abc import Field, CommonField, VariableStringField
-from kifurushi import random_values
+from kifurushi.utils import random_values
 
 
 class TestField:

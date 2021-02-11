@@ -7,7 +7,7 @@ from typing import Any, Optional, Union
 
 import attr
 
-from .random_values import (
+from kifurushi.utils.random_values import (
     rand_signed_bytes, rand_bytes, rand_signed_short, rand_short, rand_signed_int, rand_int, rand_signed_long,
     rand_long, rand_string
 )

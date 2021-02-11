@@ -7,12 +7,12 @@ from typing import Dict, Any, Union, Optional, List, Tuple
 
 import attr
 
-from .abc import Field, CommonField, name_validator
-from .random_values import (
+from kifurushi.utils.random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
     LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT, LEFT_INT, RIGHT_INT, LEFT_SIGNED_INT, RIGHT_SIGNED_INT,
     LEFT_LONG, RIGHT_LONG, LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG
 )
+from .abc import Field, CommonField, name_validator
 
 
 def check_boundaries(left: int, right: int, value: int, message: str) -> None:

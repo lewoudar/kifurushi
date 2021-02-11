@@ -1,6 +1,6 @@
 import pytest
 
-from kifurushi import random_values
+from kifurushi.utils import random_values
 
 random_parametrize = pytest.mark.parametrize(('func', 'left', 'right'), [
     ('rand_bytes', 0, 2 ** 8 - 1),
