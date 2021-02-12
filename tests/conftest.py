@@ -1,6 +1,6 @@
 import pytest
 from scapy.compat import raw
-from scapy.fields import BitField, ShortField, ShortEnumField, FlagsField
+from scapy.fields import BitField, ShortField, ShortEnumField, FlagsField, ByteField
 from scapy.packet import Packet
 from scapy.utils import hexdump
 
@@ -26,9 +26,32 @@ def mini_ip():
 
 
 @pytest.fixture(scope='session')
+def mini_body():
+    """Returns a scapy packet used to test data extraction via extract_layers function"""
+
+    class ScapyMiniBody(Packet):
+        name = 'mini body'
+        fields_desc = [
+            ShortField('arms', 2),
+            ByteField('head', 1),
+            ShortField('foot', 2),
+            ShortField('teeth', 32),
+            ByteField('nose', 1)
+        ]
+
+    return ScapyMiniBody()
+
+
+@pytest.fixture(scope='session')
 def raw_mini_ip(mini_ip):
     """Returns bytes corresponding to the raw value of mini_ip packet."""
     return raw(mini_ip)
+
+
+@pytest.fixture(scope='session')
+def raw_mini_body(mini_body):
+    """Returns bytes corresponding to the raw value of mini_body packet."""
+    return raw(mini_body)
 
 
 @pytest.fixture(scope='session')

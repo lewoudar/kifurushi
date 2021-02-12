@@ -4,9 +4,9 @@ import pytest
 
 from kifurushi.abc import VariableStringField, Field
 from kifurushi.fields import FieldPart, ByteBitsField, ShortField, ShortEnumField, ShortBitsField, FixedStringField
-from kifurushi.packet import create_packet_class, Packet
+from kifurushi.packet import create_packet_class, extract_layers, Packet
 from kifurushi.utils.random_values import RIGHT_SHORT
-from tests.helpers import Identification, Flags, MiniIP
+from tests.helpers import Identification, Flags, MiniIP, MiniBody
 
 
 class CustomStringField(VariableStringField):
@@ -300,3 +300,48 @@ class TestPacketClass:
         )
 
         assert captured.out == output
+
+
+class TestExtractLayers:
+    """Tests function extract_layers"""
+
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize('data', ['foo', 4])
+    def test_should_raise_error_if_data_is_not_of_type_bytes(self, data):
+        with pytest.raises(TypeError) as exc_info:
+            extract_layers(data, MiniIP)
+
+        assert f'data must be bytes but you provided {data}' == str(exc_info.value)
+
+    def test_should_raise_error_if_no_packet_class_is_provided(self):
+        with pytest.raises(ValueError) as exc_info:
+            extract_layers(b'foo')
+
+        assert 'you must provide at least one Packet subclass to use for layer extraction'
+
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize('wrong_value', ['foo', b'foo', 4])
+    def test_should_raise_error_if_an_item_is_not_a_subclass_of_packet_class(self, wrong_value):
+        with pytest.raises(TypeError) as exc_info:
+            extract_layers(b'hello', MiniIP, wrong_value)
+
+        message = (
+            f'all arguments following the given data must be subclasses '
+            f'of Packet class but you provided {wrong_value}'
+        )
+        assert message == str(exc_info.value)
+
+    def test_should_extract_layers_when_giving_correct_input(self, raw_mini_ip, raw_mini_body):
+        body, ip = extract_layers(raw_mini_body + raw_mini_ip, MiniBody, MiniIP)
+        assert isinstance(body, MiniBody)
+        assert isinstance(ip, MiniIP)
+
+        assert body.arms == 2
+        assert body.head == 1
+        assert body.foot == 2
+        assert body.teeth == 32
+        assert body.nose == 1
+        assert ip.version == 4
+        assert ip.ihl == 5
+        assert ip.identification
+        assert ip.length == 20

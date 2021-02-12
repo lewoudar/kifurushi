@@ -1,7 +1,8 @@
 """This module defines the base Packet class and helper functions."""
 import enum
+import inspect
 from copy import copy
-from typing import Iterable, Dict, Union, Any, Callable, List
+from typing import Iterable, Dict, Union, Any, Callable, List, Type
 
 from kifurushi.utils.network import hexdump
 from .abc import Field, CommonField
@@ -234,3 +235,43 @@ def create_packet_class(name: str, fields: Iterable[Field]) -> type(Packet):
             raise TypeError(f'each item in the list must be a Field object but you provided {field}')
 
     return type(name, (Packet,), {'__fields__': fields})
+
+
+def extract_layers(data: bytes, *args: Type[Packet]) -> List[Packet]:
+    """
+    Extract various packet from raw binary data.
+
+    For example, imagine you want to send an [ICMP](https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol)
+    ping request. You will probably need to create two Packet classes, ICMP and IP and send the sum of them over
+    the network i.e something like `socket.sendall(ICMP(...).raw + IP(...).raw)`.
+
+    Now you want to get the ICMP reply, how to get it? You will have IP and ICMP returned all at once! The solution
+    is to use *extract_layers* with code like the following:
+    `icmp, ip = extract_layers(socket.recv(), ICMP, IP)`
+
+    ** Parameters: **
+
+    * **data:** The raw bytes to parse.
+    * **args:** A list of Packet layers used to reconstruct the expected layers. You must provide at least one
+    class, if not, you will get an error.
+    """
+    if not isinstance(data, bytes):
+        raise TypeError(f'data must be bytes but you provided {data}')
+
+    if not args:
+        raise ValueError('you must provide at least one Packet subclass to use for layer extraction')
+
+    for packet_class in args:
+        if not inspect.isclass(packet_class) or not issubclass(packet_class, Packet):
+            raise TypeError(
+                f'all arguments following the given data must be subclasses'
+                f' of Packet class but you provided {packet_class}'
+            )
+
+    packets = []
+    cursor = 0
+    for packet_class in args:
+        packet = packet_class.from_bytes(data[cursor:])
+        cursor = len(packet.raw)
+        packets.append(packet)
+    return packets
