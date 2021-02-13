@@ -135,7 +135,7 @@ class Packet:
     @property
     def raw(self) -> bytes:
         """Returns bytes corresponding to what will be sent on the network."""
-        return b''.join(field.raw for field in self._fields)
+        return b''.join(field.raw(self) for field in self._fields)
 
     def __bytes__(self):
         return self.raw

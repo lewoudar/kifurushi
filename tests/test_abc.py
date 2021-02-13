@@ -35,14 +35,13 @@ class TestField:
             def struct_format(self) -> str:
                 return '!b'
 
-            @property
-            def raw(self) -> bytes:
+            def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
                 return b''
 
             def random_value(self) -> Union[int, str]:
                 return 0
 
-            def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+            def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
                 return b''
 
             def __repr__(self):
@@ -59,7 +58,7 @@ class TestField:
 class DummyField(CommonField):
     _value: int = attr.ib(init=False, validator=attr.validators.instance_of(int))
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
         pass
 
 
@@ -174,18 +173,18 @@ class TestCommonField:
         assert cloned_field == field
         assert cloned_field is not field
 
-    # tests raw property
+    # tests raw method
 
     def test_should_return_correct_byte_value_when_calling_raw_property(self):
         field = DummyField('foo', 2, format='i')
         field.value = 4
 
-        assert b'\x00\x00\x00\x04' == field.raw
+        assert b'\x00\x00\x00\x04' == field.raw()
 
 
 class DummyStringField(VariableStringField):
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
         pass
 
 
@@ -279,13 +278,13 @@ class TestVariableStringField:
 
         assert given_value == field.value
 
-    # tests of raw property
+    # tests of raw method
 
     def test_raw_property_returns_correct_value(self):
         field = DummyStringField('fruit')
         field.value = 'banana'
 
-        assert b'banana' == field.raw
+        assert b'banana' == field.raw()
 
     # test of struct_format property
 

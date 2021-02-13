@@ -287,13 +287,13 @@ class TestFixedStringField:
         assert 8 == field.size
         assert '!8s' == field.struct_format
 
-    # test of raw property
+    # test of raw method
 
     def test_raw_property_returns_correct_value(self):
         value = 'h' * 8
         field = FixedStringField('foo', value, 8)
 
-        assert value.encode() == field.raw
+        assert value.encode() == field.raw()
 
     # test of value property
 
@@ -347,9 +347,9 @@ class TestFieldPart:
             FieldPart(name, 2, 2)
 
         assert (
-           'FieldPart name must starts with a letter and follow standard'
-           f' rules for declaring a variable in python but you provided {name}'
-       ) == str(exc_info.value)
+                   'FieldPart name must starts with a letter and follow standard'
+                   f' rules for declaring a variable in python but you provided {name}'
+               ) == str(exc_info.value)
 
     @pytest.mark.parametrize('default', [4.5, '4'])
     def test_should_raise_error_when_default_is_not_an_integer(self, default):
@@ -616,12 +616,12 @@ class TestBitsField:
 
         assert value == field.value_as_tuple
 
-    # test of raw property
+    # test of raw method
 
     @size_format_parametrize
     def test_should_return_byte_value_when_calling_raw_property(self, size, format_):
         field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
-        assert struct.pack(f'!{format_}', field.value) == field.raw
+        assert struct.pack(f'!{format_}', field.value) == field.raw()
 
     # test of clone method
 

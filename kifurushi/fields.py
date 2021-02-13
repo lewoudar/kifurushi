@@ -284,8 +284,7 @@ class FixedStringField(CommonField):
 
         self._value = value
 
-    @property
-    def raw(self) -> bytes:
+    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
         """Returns bytes encoded value of the internal string."""
         return self._value.encode()
 
@@ -523,8 +522,7 @@ class BitsField(HexMixin, Field):
                 field_part.value = int(str_value, base=2)
                 bin_value = bin_value[field_part.size:]
 
-    @property
-    def raw(self) -> bytes:
+    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
         return self._struct.pack(self.value)
 
     def random_value(self) -> int:

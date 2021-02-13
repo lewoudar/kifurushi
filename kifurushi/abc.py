@@ -41,10 +41,16 @@ class Field(ABC):
     def struct_format(self) -> str:
         """Returns the struct format used under the hood for computation of field value."""
 
-    @property
     @abstractmethod
-    def raw(self) -> bytes:
-        """Returns the representation of field value in bytes as it will be sent on the network."""
+    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+        """
+        Returns the representation of field value in bytes as it will be sent on the network.
+
+        **Parameters:**
+
+        * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
+        when the computation of the field value depends on other fields.
+        """
 
     @abstractmethod
     def random_value(self) -> Union[int, str]:
@@ -62,8 +68,8 @@ class Field(ABC):
         **Parameters:**
 
         * **data:**: The raw data currently being parsed by a packet object.
-        * **packet:** The optional packet currently parsing a raw bytes object. It can be useful
-        when current field value depends of another one.
+        * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
+        when the value of the current field depends on other fields.
         """
 
     @abstractmethod
@@ -167,9 +173,15 @@ class CommonField(Field):
     def __repr__(self):
         return f'<{self.__class__.__name__}: name={self._name}, value={self._value}, default={self._default}>'
 
-    @property
-    def raw(self) -> bytes:
-        """Returns the representation of field value in bytes as it will be sent on the network."""
+    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+        """
+        Returns the representation of field value in bytes as it will be sent on the network.
+
+        **Parameters:**
+
+        * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
+        when the computation of the field value depends on other fields.
+        """
         return self._struct.pack(self._value)
 
 
@@ -232,9 +244,15 @@ class VariableStringField(Field):
 
         self._value = value
 
-    @property
-    def raw(self) -> bytes:
-        """Returns the representation of field value in bytes as it will be sent on the network."""
+    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+        """
+        Returns the representation of field value in bytes as it will be sent on the network.
+
+        **Parameters:**
+
+        * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
+        when the computation of the field value depends on other fields.
+        """
         return self._value.encode()
 
     def __repr__(self):
@@ -261,7 +279,7 @@ class VariableStringField(Field):
         **Parameters:**
 
         * **data:**: The raw data currently being parsed by a packet object.
-        * **packet:** The optional packet currently parsing a raw bytes object. For a variable string field,
+        * **packet:** The optional packet currently parsing  the raw `data` bytes. For a variable string field,
         it may be useful because the length of the field often depends on another field and we can retrieve if
         from the packet.
         """
