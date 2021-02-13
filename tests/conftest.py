@@ -2,7 +2,7 @@ import pytest
 from scapy.compat import raw
 from scapy.fields import BitField, ShortField, ShortEnumField, FlagsField, ByteField
 from scapy.packet import Packet
-from scapy.utils import hexdump
+from scapy.utils import hexdump, checksum
 
 from .helpers import MiniIP
 
@@ -58,6 +58,12 @@ def raw_mini_body(mini_body):
 def mini_ip_hexdump(mini_ip):
     """Returns tcpdump like hexadecimal view of mini_ip packet."""
     return hexdump(mini_ip, dump=True)
+
+
+@pytest.fixture(scope='session')
+def mini_ip_checksum(raw_mini_ip):
+    """Returns mini_ip checksum."""
+    return checksum(raw_mini_ip)
 
 
 @pytest.fixture()

@@ -243,11 +243,11 @@ def extract_layers(data: bytes, *args: Type[Packet]) -> List[Packet]:
 
     For example, imagine you want to send an [ICMP](https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol)
     ping request. You will probably need to create two Packet classes, ICMP and IP and send the sum of them over
-    the network i.e something like `socket.sendall(ICMP(...).raw + IP(...).raw)`.
+    the network i.e something like `socket.sendto(ICMP(...).raw + IP(...).raw, address)`.
 
-    Now you want to get the ICMP reply, how to get it? You will have IP and ICMP returned all at once! The solution
-    is to use *extract_layers* with code like the following:
-    `icmp, ip = extract_layers(socket.recv(), ICMP, IP)`
+    Now you want to get the ICMP reply, how to get it? You can't use `ICMP.from_bytes` because you will have IP and
+    ICMP returned all at once! The solution is to use *extract_layers* with code like the following:
+    `icmp, ip = extract_layers(socket.recvfrom(1024)[0], ICMP, IP)`
 
     ** Parameters: **
 
