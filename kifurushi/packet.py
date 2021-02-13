@@ -22,12 +22,18 @@ class Packet:
 
     @staticmethod
     def _create_field_mapping(fields: List[Field]) -> Dict[str, Field]:
+        error_message = 'you already have a field with name {name}'
         field_mapping = {}
+
         for field in fields:
             if isinstance(field, BitsField):
                 for field_part in field.parts:
+                    if field_part.name in field_mapping:
+                        raise AttributeError(error_message.format(name=field_part.name))
                     field_mapping[field_part.name] = field
             else:
+                if field.name in field_mapping:
+                    raise AttributeError(error_message.format(name=field.name))
                 field_mapping[field.name] = field
 
         return field_mapping

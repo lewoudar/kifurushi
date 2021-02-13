@@ -67,8 +67,33 @@ class TestCreatePacketClass:
 
 
 # noinspection PyArgumentList
+class ErrorPacket1(Packet):
+    __fields__ = [
+        ShortField('hello', 2),
+        ByteBitsField([FieldPart('hello', 4, 4), FieldPart('foo', 4, 4)])  # hello field comes in double
+    ]
+
+
+# noinspection PyArgumentList
+class ErrorPacket2(Packet):
+    __fields__ = [
+        ShortField('hello', 2),
+        ShortField('potatoes', 3),
+        ShortField('players', 2),
+        ShortField('hello', 3)  # hello field comes in double
+    ]
+
+
+# noinspection PyArgumentList
 class TestPacketClass:
     """Tests Packet class implementation through the use of custom MiniIP class"""
+
+    @pytest.mark.parametrize('packet_class', [ErrorPacket1, ErrorPacket2])
+    def test_should_raise_error_when_a_field_name_is_defined_more_than_once(self, packet_class):
+        with pytest.raises(AttributeError) as exc_info:
+            packet_class()
+
+        assert 'you already have a field with name hello' == str(exc_info.value)
 
     def test_should_raise_error_when_given_attribute_is_not_a_valid_field_name(self):
         with pytest.raises(AttributeError) as exc_info:
@@ -317,7 +342,7 @@ class TestExtractLayers:
         with pytest.raises(ValueError) as exc_info:
             extract_layers(b'foo')
 
-        assert 'you must provide at least one Packet subclass to use for layer extraction'
+        assert 'you must provide at least one Packet subclass to use for layer extraction' == str(exc_info.value)
 
     # noinspection PyTypeChecker
     @pytest.mark.parametrize('wrong_value', ['foo', b'foo', 4])
