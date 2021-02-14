@@ -3,7 +3,9 @@ from typing import List
 import pytest
 
 from kifurushi.abc import VariableStringField, Field
-from kifurushi.fields import FieldPart, ByteBitsField, ShortField, ShortEnumField, ShortBitsField, FixedStringField
+from kifurushi.fields import (
+    FieldPart, ByteBitsField, ShortField, ShortEnumField, ShortBitsField, FixedStringField, ConditionalField
+)
 from kifurushi.packet import create_packet_class, extract_layers, Packet
 from kifurushi.utils.random_values import RIGHT_SHORT
 from tests.helpers import Identification, Flags, MiniIP, MiniBody
@@ -81,6 +83,15 @@ class ErrorPacket2(Packet):
         ShortField('potatoes', 3),
         ShortField('players', 2),
         ShortField('hello', 3)  # hello field comes in double
+    ]
+
+
+# noinspection PyArgumentList
+class Fruit(Packet):
+    __fields__ = [
+        ShortField('apples', 2),
+        ConditionalField(ShortField('pie', 1), lambda p: p.apples <= 2),
+        ConditionalField(ShortField('juice', 1), lambda p: p.apples > 2)
     ]
 
 
@@ -301,6 +312,14 @@ class TestPacketClass:
         representation = f'<MiniIP: version=4, ihl=5, length={value}, identification=1, flags=0x2, offset=0x0>'
         assert representation == repr(custom_ip)
 
+    @pytest.mark.parametrize(('apples', 'representation'), [
+        (2, '<Fruit: apples=2, pie=1>'),
+        (4, '<Fruit: apples=4, juice=1>')
+    ])
+    def test_should_represent_packet_taking_in_account_conditional_fields(self, apples, representation):
+        fruit = Fruit(apples=apples)
+        assert representation == repr(fruit)
+
     # test of show method
 
     @pytest.mark.parametrize(('value_1', 'value_2', 'hexadecimal'), [
@@ -325,6 +344,19 @@ class TestPacketClass:
         )
 
         assert captured.out == output
+
+    @pytest.mark.parametrize(('apples', 'representation'), [
+        (2, 'apples : ShortField = 2 (2)\npie    : ShortField = 1 (1)\n'),
+        (4, 'apples : ShortField = 4 (2)\njuice  : ShortField = 1 (1)\n')
+    ])
+    def test_should_print_packet_representation_taking_in_account_conditional_field(
+            self, capsys, apples, representation
+    ):
+        fruit = Fruit(apples=apples)
+        fruit.show()
+        captured = capsys.readouterr()
+
+        assert captured.out == representation
 
 
 class TestExtractLayers:

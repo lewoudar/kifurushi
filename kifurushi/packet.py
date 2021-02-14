@@ -6,7 +6,7 @@ from typing import Iterable, Dict, Union, Any, Callable, List, Type
 
 from kifurushi.utils.network import hexdump
 from .abc import Field, CommonField
-from .fields import BitsField, FieldPart
+from .fields import BitsField, FieldPart, ConditionalField
 
 
 class Packet:
@@ -182,6 +182,10 @@ class Packet:
         template = '{name}={value}, '
 
         for field in self._fields:
+            # we don't represent fields where condition is not true
+            if isinstance(field, ConditionalField) and not field.condition(self):
+                continue
+
             if isinstance(field, BitsField):
                 for field_part in field.parts:
                     value = hex(field_part.value) if field_part.hex else field_part.value
@@ -201,7 +205,15 @@ class Packet:
         max_length = len(names[-1])
 
         for field in self._fields:
-            class_name = field.__class__.__name__
+            # we don't represent fields where condition is not true
+            if isinstance(field, ConditionalField) and not field.condition(self):
+                continue
+
+            if isinstance(field, ConditionalField):
+                class_name = getattr(field, '_field').__class__.__name__
+            else:
+                class_name = field.__class__.__name__
+
             if isinstance(field, BitsField):
                 for field_part in field.parts:
                     value = hex(field_part.value) if field_part.hex else field_part.value
