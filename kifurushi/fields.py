@@ -1,9 +1,10 @@
 """This module contains field implementations."""
 import enum
+import inspect
 import random
 import struct
 from copy import copy
-from typing import Dict, Any, Union, Optional, List, Tuple
+from typing import Dict, Any, Union, Optional, List, Tuple, Callable
 
 import attr
 
@@ -65,7 +66,16 @@ class NumericField(HexMixin, CommonField):
     _default: int = attr.ib(validator=[attr.validators.instance_of(int), numeric_validator])
     _value: int = attr.ib(init=False, validator=[attr.validators.instance_of(int), numeric_validator])
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+        """
+        Computes the field value from the raw bytes and returns remaining bytes to parse from `data` if any.
+
+        **Parameters:**
+
+        * **data:**: The raw data currently being parsed by a packet object.
+        * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
+        when the value of the current field depends on other fields.
+        """
         self._value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
 
@@ -262,8 +272,16 @@ class FixedStringField(CommonField):
         self._length = length
         super().__init__(name, default, format=f'{length}s')
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
-        """Sets internal string value and returns remaining bytes."""
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+        """
+        Computes the field value from the raw bytes and returns remaining bytes to parse from `data` if any.
+
+        **Parameters:**
+
+        * **data:**: The raw data currently being parsed by a packet object.
+        * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
+        when the value of the current field depends on other fields.
+        """
         value: bytes = self._struct.unpack(data[:self._size])[0]
         self._value = value.decode()
         return data[self._size:]
@@ -531,8 +549,8 @@ class BitsField(HexMixin, Field):
         # more about the error here: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
         return random.randint(0, 2 ** (self._size * 8) - 1)  # nosec
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
-        """Sets internal value of each field part and returns remaining bytes."""
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+        """Sets internal value of each field part and returns remaining bytes if any."""
         self.value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
 
@@ -593,3 +611,82 @@ class IntBitsField(BitsField):
 class LongBitsField(BitsField):
     """A specialized BitsField class dealing with an eight unsigned bytes field."""
     _format: str = attr.ib(default='Q', init=False)
+
+
+@attr.s(slots=True, repr=False)
+class ConditionalField(Field):
+    _field: Field = attr.ib(validator=attr.validators.instance_of(Field))
+    _condition: Callable[['Packet'], bool] = attr.ib(validator=attr.validators.is_callable())  # noqa: F821
+
+    def __attrs_post_init__(self):
+        signature = inspect.signature(self._condition)
+        length = len(signature.parameters)
+        if length != 1:
+            raise TypeError(
+                f'callable {self._condition.__name__} must takes one parameter (a packet instance)'
+                f' but yours has {length}'
+            )
+
+    @property
+    def size(self) -> int:
+        return self._field.size
+
+    @property
+    def default(self) -> Union[int, str]:
+        return self._field.default
+
+    @property
+    def value(self) -> Union[int, str]:
+        return self._field.value
+
+    @value.setter
+    def value(self, value: Any) -> None:
+        self._field.value = value
+
+    @property
+    def struct_format(self) -> str:
+        return self._field.struct_format
+
+    def random_value(self) -> Union[int, str]:
+        return self._field.random_value()
+
+    def clone(self) -> 'ConditionalField':
+        cloned_field = copy(self)
+        cloned_field._field = self._field.clone()
+        return cloned_field
+
+    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+        """
+        Returns the representation of field value in bytes as it will be sent on the network.
+
+        **Parameters:**
+
+        * **packet:** The optional packet currently parsing the raw `data` bytes. It is used to check
+        if the inner field should return its raw value or not.
+        """
+        if self._condition(packet):
+            return self._field.raw(packet)
+        return b''
+
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+        """
+        Optionally computes the field value from the raw bytes and returns remaining bytes to parse
+        from `data` if any. The `self._condition` callback is used to determine if you need to treat
+        `data`.
+
+        **Parameters:**
+
+        * **data:**: The raw data currently being parsed by a packet object.
+        * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
+        when the value of the current field depends on other fields.
+        """
+        if self._condition(packet):
+            return self._field.compute_value(data, packet)
+        return data
+
+    def __getattr__(self, item):
+        # this is useful to call attributes defined in the inner field.
+        return getattr(self._field, item)
+
+    def __repr__(self):
+        return repr(self._field)

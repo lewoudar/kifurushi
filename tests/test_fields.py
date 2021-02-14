@@ -10,7 +10,7 @@ from kifurushi.fields import (
     ByteField, SignedByteField, ShortField, SignedShortField, IntField, SignedIntField, LongField, SignedLongField,
     enum_to_dict, ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField, IntEnumField,
     SignedIntEnumField, LongEnumField, SignedLongEnumField, FixedStringField, FieldPart, BitsField, ByteBitsField,
-    ShortBitsField, IntBitsField, LongBitsField, HexMixin
+    ShortBitsField, IntBitsField, LongBitsField, HexMixin, ConditionalField
 )
 from kifurushi.utils.random_values import (
     LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
@@ -715,7 +715,7 @@ class TestBitsField:
 
 
 class TestSpecializedBitsFields:
-    """Tests classes ByteBitsField, ShortBitsField, IntBitsField, LongBitsField"""
+    """Tests classes ByteBitsField, ShortBitsField, IntBitsField, LongBitsField."""
 
     @pytest.mark.parametrize('bit_class', [ByteBitsField, ShortBitsField, IntBitsField, LongBitsField])
     def test_should_check_classes_inherit_from_bits_field(self, bit_class):
@@ -738,3 +738,111 @@ class TestSpecializedBitsFields:
         assert f'!{format_}' == field.struct_format
         assert (4, 5) == field.value_as_tuple
         assert field.default == field.value
+
+
+class DummyPacket:
+    def __init__(self):
+        self.apples = 0
+
+
+# noinspection PyArgumentList
+class TestConditionalField:
+    """Tests class ConditionalField."""
+
+    @pytest.mark.parametrize('arguments', [
+        ('foo', lambda x: x),
+        (ShortField('foo', 2), 'foo')
+    ])
+    def test_should_raise_error_when_given_arguments_are_not_correct(self, arguments):
+        with pytest.raises(TypeError):
+            ConditionalField(*arguments)
+
+    def test_should_raise_error_if_callable_does_not_take_exactly_one_argument(self):
+        def condition(x, y):
+            return x + y
+
+        with pytest.raises(TypeError) as exc_info:
+            ConditionalField(ShortField('foo', 2), condition)
+
+        message = f'callable {condition.__name__} must takes one parameter (a packet instance) but yours has 2'
+        assert message == str(exc_info.value)
+
+    # test implementation of default field properties
+
+    def test_should_correctly_initialize_field(self):
+        field = ConditionalField(ShortField('foo', 3), lambda x: x)
+
+        assert 'foo' == field.name
+        assert 3 == field.value == field.default
+        assert '!H' == field.struct_format
+        assert 2 == field.size
+
+    # test of value setter method
+
+    def test_should_update_field_value_when_giving_correct_value(self):
+        field = ConditionalField(ShortField('foo', 2), lambda x: x)
+        field.value = 5
+
+        assert 5 == field.value
+
+    # test of raw method
+
+    @pytest.mark.parametrize(('value', 'expected_data'), [
+        (2, b'\x00\x02'),
+        (1, b'')
+    ])
+    def test_should_return_correct_byte_value_when_calling_raw_method(self, value, expected_data):
+        packet = DummyPacket()
+        packet.apples = value
+        field = ConditionalField(ShortField('foo', 2), lambda pkt: pkt.apples in [0, 2])
+
+        assert expected_data == field.raw(packet)
+
+    # test of compute_value method
+
+    @pytest.mark.parametrize(('apples', 'expected_data', 'value'), [
+        (2, b'hello', 4),
+        (1, b'\x00\x04hello', 2)
+    ])
+    def test_should_correctly_compute_field_value_when_calling_compute_value_method(self, apples, expected_data, value):
+        packet = DummyPacket()
+        packet.apples = apples
+        field = ConditionalField(ShortField('foo', 2), lambda pkt: pkt.apples in [0, 2])
+
+        assert expected_data == field.compute_value(b'\x00\x04hello', packet)
+        assert value == field.value
+
+    # test of clone method
+
+    def test_should_return_a_copy_of_field_when_calling_clone_method(self):
+        field = ConditionalField(ShortField('foo', 2), lambda pkt: pkt.apples in [0, 2])
+        cloned_field = field.clone()
+
+        assert cloned_field == field
+        assert cloned_field is not field
+        assert cloned_field._field is not field._field
+
+    # test of random method
+
+    def test_should_return_a_correct_value_when_calling_random_value_method(self):
+        field = ConditionalField(ShortField('foo', 2), lambda pkt: pkt.apples in [0, 2])
+        assert 0 <= field.random_value() <= RIGHT_SHORT
+
+    # test of __repr__ method
+
+    def test_should_return_correct_field_representation_when_calling_repr_function(self):
+        inner_field = ShortField('foo', 2)
+        field = ConditionalField(inner_field, lambda x: x)
+
+        assert repr(inner_field) == repr(field)
+
+    # test of __getattr__ method
+
+    def test_should_find_inner_field_method_when_called_method_is_not_defined_in_conditional_field(self):
+        class CustomShortField(ShortField):
+            @staticmethod
+            def return_hello():
+                return 'hello'
+
+        field = ConditionalField(CustomShortField('foo', 2), lambda x: x)
+        assert 'hello' == field.return_hello()

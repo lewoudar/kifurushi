@@ -61,9 +61,9 @@ class Field(ABC):
         return copy.copy(self)
 
     @abstractmethod
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
         """
-        Computes the field value from the raw bytes and returns remaining bytes to parse from `data`.
+        Computes the field value from the raw bytes and returns remaining bytes to parse from `data` if any.
 
         **Parameters:**
 
@@ -272,9 +272,9 @@ class VariableStringField(Field):
         return len(self._value)
 
     @abstractmethod
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
         """
-        Sets internal string value and returns remaining bytes.
+        Sets internal string value and returns remaining bytes from `data` if any.
 
         **Parameters:**
 
