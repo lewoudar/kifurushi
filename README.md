@@ -47,25 +47,30 @@ from kifurushi import Packet, ShortField, ByteField, IntEnumField
 HOST = 'disney-stuff.com'
 PORT = 14006
 
+
 class Mood(enum.Enum):
-    happy = 1
-    cool = 2
-    angry = 4
-    
-packet = Packet([
+  happy = 1
+  cool = 2
+  angry = 4
+
+
+class Disney(Packet):
+  __fields__ = [
     ShortField('mickey', 2),
     ByteField('minnie', 3, hex=True),
     IntEnumField('donald', 1, Mood)
-])
+  ]
+
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    packet.donald = Mood.cool.value
-    # we send the packet data
-    s.sendall(packet.raw)
-    # we create another packet object from raw bytes
-    received_packet = packet.get_packet_from_bytes(s.recv(1024))
-    print(received_packet)
+  disney = Disney()
+  s.connect((HOST, PORT))
+  disney.donald = Mood.cool.value
+  # we send the packet data
+  s.sendall(disney.raw)
+  # we create another packet object from raw bytes
+  received_packet = Disney.from_bytes(s.recv(1024))
+  print(received_packet)
 ```
 
 To see more protocol implementations check the folder [examples](examples) of the project.

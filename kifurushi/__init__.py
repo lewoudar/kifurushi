@@ -3,14 +3,14 @@ from .fields import (
     NumericField, ByteField, SignedByteField, ShortField, SignedShortField, IntField, SignedIntField, LongField,
     SignedLongField, ByteEnumField, SignedByteEnumField, ShortEnumField, SignedShortEnumField, IntEnumField,
     SignedIntEnumField, LongEnumField, SignedLongEnumField, FixedStringField, FieldPart, BitsField, ByteBitsField,
-    ShortBitsField, IntBitsField, LongBitsField, HexMixin
+    ShortBitsField, IntBitsField, LongBitsField, ConditionalField, HexMixin
 )
-from .random_values import (
+from .packet import Packet, extract_layers
+from .utils.network import hexdump, checksum
+from .utils.random_values import (
     rand_signed_bytes, rand_bytes, rand_signed_short, rand_short, rand_signed_int, rand_int, rand_signed_long,
     rand_long, rand_string
 )
-from .packet import Packet
-
 
 __all__ = [
     # abc
@@ -19,10 +19,12 @@ __all__ = [
     'NumericField', 'ByteField', 'SignedByteField', 'ShortField', 'SignedShortField', 'IntField', 'SignedIntField',
     'LongField', 'SignedLongField', 'ByteEnumField', 'SignedByteEnumField', 'ShortEnumField', 'SignedShortEnumField',
     'IntEnumField', 'SignedIntEnumField', 'LongEnumField', 'SignedLongEnumField', 'FixedStringField', 'FieldPart',
-    'BitsField', 'ByteBitsField', 'ShortBitsField', 'IntBitsField', 'LongBitsField', 'HexMixin',
-    # random_values
+    'BitsField', 'ByteBitsField', 'ShortBitsField', 'IntBitsField', 'LongBitsField', 'ConditionalField', 'HexMixin',
+    # utils.random_values
     'rand_short', 'rand_string', 'rand_bytes', 'rand_long', 'rand_int', 'rand_signed_bytes', 'rand_signed_short',
     'rand_signed_long', 'rand_signed_int',
+    # utils.network
+    'hexdump', 'checksum',
     # packet
-    'Packet'
+    'Packet', 'extract_layers'
 ]
