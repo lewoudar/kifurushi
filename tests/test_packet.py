@@ -255,13 +255,24 @@ class TestPacketClass:
 
     # test of from_bytes class method
 
-    def test_should_create_a_packet_when_calling_from_bytes_method_with_raw_bytes(self):
+    def test_should_create_packet_when_calling_from_bytes_method_with_raw_bytes(self):
         mini_ip = MiniIP(version=5, length=18)
         new_ip = MiniIP.from_bytes(mini_ip.raw)
 
         assert isinstance(new_ip, MiniIP)
         assert 5 == new_ip.version
         assert 18 == new_ip.length
+
+    @pytest.mark.parametrize(('apples', 'pie', 'juice', 'data'), [
+        (2, 2, 1, b'\x00\x02\x00\x02'),
+        (4, 1, 2, b'\x00\x04\x00\x02')
+    ])
+    def test_should_create_packet_taking_in_account_conditional_field(self, apples, pie, juice, data):
+        fruit = Fruit.from_bytes(data)
+
+        assert fruit.apples == apples
+        assert fruit.pie == pie
+        assert fruit.juice == juice
 
     # test of random_packet class method
 

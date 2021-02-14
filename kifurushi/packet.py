@@ -59,6 +59,14 @@ class Packet:
             value = field[name].value if isinstance(field, BitsField) else field.value
             setattr(packet, name, value)
 
+    @staticmethod
+    def _set_packet_attribute(field: Field, packet: 'Packet') -> None:
+        if isinstance(field, BitsField):
+            for field_part in field.parts:
+                setattr(packet, field_part.name, field_part.value)
+        else:
+            setattr(packet, field.name, field.value)
+
     @classmethod
     def from_bytes(cls, data: bytes) -> 'Packet':
         """
@@ -71,8 +79,10 @@ class Packet:
         packet = cls()
         for field in packet._fields:
             data = field.compute_value(data, packet)
+            # we need to set directly the field after it is parsed, so that conditional fields
+            # can check whether or not they need to parse data
+            cls._set_packet_attribute(field, packet)
 
-        cls._set_packet_attributes(packet)
         return packet
 
     @classmethod
