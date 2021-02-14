@@ -776,6 +776,7 @@ class TestConditionalField:
         assert 3 == field.value == field.default
         assert '!H' == field.struct_format
         assert 2 == field.size
+        assert callable(field.condition)
 
     # test of value setter method
 

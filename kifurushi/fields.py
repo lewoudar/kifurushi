@@ -647,6 +647,10 @@ class ConditionalField(Field):
     def struct_format(self) -> str:
         return self._field.struct_format
 
+    @property
+    def condition(self) -> Callable[['Packet'], bool]:  # noqa: F821
+        return self._condition
+
     def random_value(self) -> Union[int, str]:
         return self._field.random_value()
 
