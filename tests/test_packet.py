@@ -200,6 +200,14 @@ class TestPacketClass:
     def test_should_correctly_compute_packet_byte_value_when_calling_raw_property(self, custom_ip, raw_mini_ip):
         assert raw_mini_ip == custom_ip.raw
 
+    @pytest.mark.parametrize(('apples', 'pie', 'juice', 'data'), [
+        (1, 1, 0, b'\x00\x01\x00\x01'),
+        (8, 0, 3, b'\x00\x08\x00\x03')
+    ])
+    def test_should_compute_packet_byte_value_taking_in_account_conditional_fields(self, apples, pie, juice, data):
+        fruit = Fruit(apples=apples, pie=pie, juice=juice)
+        assert data == fruit.raw
+
     # test of __bytes__ method
 
     def test_should_return_byte_value_when_calling_bytes_builtin_function(self, custom_ip):
