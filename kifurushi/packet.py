@@ -79,8 +79,8 @@ class Packet:
         packet = cls()
         for field in packet._fields:
             data = field.compute_value(data, packet)
-            # we need to set directly the field after it is parsed, so that conditional fields
-            # can check whether or not they need to parse data
+            # we need to set directly the field after it is parsed, so that next fields depending on
+            # previous fields can check whether or not they need to parse data
             cls._set_packet_attribute(field, packet)
 
         return packet
@@ -201,7 +201,7 @@ class Packet:
                     value = hex(field_part.value) if field_part.hex else field_part.value
                     representation += template.format(name=field_part.name, value=value)
             else:
-                value = hex(field.value) if field.hex else field.value
+                value = hex(field.value) if (hasattr(field, 'hex') and field.hex) else field.value
                 representation += template.format(name=field.name, value=value)
 
         representation = representation[:-2]
