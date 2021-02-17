@@ -28,6 +28,10 @@ class IPField(Field):
         self._address = ipaddress.ip_address(self._default)
 
     @property
+    def name(self) -> str:
+        return self._name
+
+    @property
     def size(self) -> int:
         return 4 if self._address.version == 4 else 16
 
