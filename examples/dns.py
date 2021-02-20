@@ -87,6 +87,10 @@ class DomainNameField(Field):
     _name: str = attr.ib(default='name', validator=attr.validators.instance_of(str))
     _labels: List[str] = attr.ib(factory=list, init=False)
     _format: str = attr.ib(default='!', validator=attr.validators.in_(['!', '@', '<', '>', '=']))
+    # we need the whole DNS packet in order to compute compressed names
+    _raw_packet: bytes = attr.ib(default=b'', init=False)
+    _pointer_labels: List[str] = attr.ib(factory=list, init=False)
+    _pointer_value: int = attr.ib(default=0, init=False)
 
     def __attrs_post_init__(self):
         self._default = self._default if self._default.endswith('.') else f'{self._default}.'
@@ -97,16 +101,26 @@ class DomainNameField(Field):
         return self._name
 
     @property
+    def raw_packet(self) -> bytes:
+        return self._raw_packet
+
+    @raw_packet.setter
+    def raw_packet(self, data: bytes) -> None:
+        self._raw_packet = data
+
+    @property
     def default(self) -> str:
         return self._default
 
     @property
     def value(self) -> str:
-        return '.'.join(label for label in self._labels) + '.'
+        return '.'.join(label for label in [*self._labels, *self._pointer_labels]) + '.'
 
     @value.setter
     def value(self, value: str) -> None:
         # you probably want to check the given value but I will not do it here.
+        if self._pointer_value:
+            return
         value = value.rstrip('.')
         self._labels = value.split('.')
 
@@ -116,7 +130,10 @@ class DomainNameField(Field):
         for label in self._labels:
             result += f'B{len(label)}s'
 
-        result += 'B'
+        if self._pointer_value:
+            result += 'H'
+        else:
+            result += 'B'
         return result
 
     @property
@@ -131,23 +148,65 @@ class DomainNameField(Field):
             parts.extend([length, label.encode()])
             struct_format += f'B{length}s'
 
-        struct_format += 'B'
-        parts.append(0)
+        if self._pointer_value:
+            struct_format += 'H'
+            parts.append(self._pointer_value)
+        else:
+            struct_format += 'B'
+            parts.append(0)
         return struct.pack(struct_format, *parts)
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa
-        # we do not handle label compression like specified in rfc 1035 but it is a good idea to do that
-        length = data[0]
-        index = 1
+    @staticmethod
+    def _get_bin_value(value: int, size) -> str:
+        bin_value = bin(value)[2:]
+        if len(bin_value) < size * 8:
+            difference = size * 8 - len(bin_value)
+            bin_value = '0' * difference + bin_value
+
+        return bin_value
+
+    def _is_pointer(self, value: int) -> bool:
+        return '11' == self._get_bin_value(value, 1)[:2]
+
+    def _get_pointer(self, value: int) -> int:
+        bin_value = self._get_bin_value(value, 2)
+        return int(bin_value[2:], 2)
+
+    def compute_value(self, data: bytes, packet: Packet = None) -> bytes:
+        index = 0
         labels: List[str] = []
-        while length:
-            label = data[index: index + length]
-            labels.append(label.decode())
-            index += length
+        pointer_labels: List[str] = []
+        end_of_data = False
+
+        while not end_of_data:
             length = data[index]
-            index += 1
+            if self._is_pointer(length):
+                self._pointer_value = struct.unpack(f'{self._format}H', data[index: index + 2])[0]
+                pointer = self._get_pointer(self._pointer_value)
+                length = self._raw_packet[pointer]
+                # once we enter a pointer, we are sure that we can read labels to the end
+                while length:
+                    pointer += 1
+                    label = self._raw_packet[pointer: pointer + length]
+                    pointer_labels.append(label.decode())
+                    pointer += length
+                    length = self._raw_packet[pointer]
+                end_of_data = True
+            else:
+                index += 1
+                label = data[index: index + length]
+                labels.append(label.decode())
+                index += length
+                length = data[index]
+                if not length:
+                    index += 1
+                    end_of_data = True
 
         self._labels = labels
+        self._pointer_labels = pointer_labels
+        if self._pointer_value:
+            index += 2
+
         return data[index:]
 
     def random_value(self) -> str:
@@ -200,6 +259,17 @@ class ResourceRecord(Packet):
         ConditionalField(TxtField('spf', 'kifurushi'), lambda p: p.type == DNSTypes.SPF.value)
     ]
 
+    @classmethod
+    def from_bytes(cls, data: bytes, raw_packet: bytes = b'') -> Packet:
+        packet = cls()
+        for field in packet._fields:
+            if isinstance(field, DomainNameField):
+                field.raw_packet = raw_packet
+            data = field.compute_value(data, packet)
+            cls._set_packet_attribute(field, packet)
+
+        return packet
+
 
 # noinspection PyArgumentList
 class Question(Packet):
@@ -208,6 +278,17 @@ class Question(Packet):
         ShortEnumField('qtype', 1, DNSTypes),
         ShortEnumField('qclass', 1, DNSClasses)
     ]
+
+    @classmethod
+    def from_bytes(cls, data: bytes, raw_packet: bytes = b'') -> Packet:
+        packet = cls()
+        for field in packet._fields:
+            if isinstance(field, DomainNameField):
+                field.raw_packet = raw_packet
+            data = field.compute_value(data, packet)
+            cls._set_packet_attribute(field, packet)
+
+        return packet
 
 
 # noinspection PyArgumentList
@@ -267,39 +348,39 @@ class DNS(Packet):
     @property
     def raw(self) -> bytes:
         data = b''.join(field.raw(self) for field in self._fields)
-        if self.qr == 0:  # question
-            data += b''.join(question.raw for question in self.questions)
-        else:  # answer
-            answers = [*self.answers, *self.authority_answers, *self.additional_answers]
-            data += b''.join(answer.raw for answer in answers)
+        data += b''.join(question.raw for question in self.questions)
+        data += b''.join(answer.raw for answer in [*self.answers, *self.authority_answers, *self.additional_answers])
 
         return data
 
     @classmethod
     def from_bytes(cls, data: bytes) -> 'DNS':
         packet = cls()
+        cloned_data = (data + b'.')[:-1]
+
         for field in packet._fields:
             data = field.compute_value(data, packet)
             cls._set_packet_attribute(field, packet)
 
         cursor = 0
-        if packet.qr == 0:  # question
-            questions = []
-            for _ in range(packet.qdcount):
-                question = Question.from_bytes(data[cursor:])
-                cursor += len(question.raw)
-                questions.append(question)
-            packet.questions = questions
-        else:
-            for item, count in [
-                ('answers', 'ancount'), ('authority_answers', 'nscount'), ('additional_answers', 'arcount')
-            ]:
-                answers = []
-                for _ in range(getattr(packet, count)):
-                    answer = ResourceRecord.from_bytes(data[cursor:])
-                    cursor += len(answer.raw)
-                    answers.append(answer)
-                setattr(packet, item, answers)
+        # questions
+        questions = []
+        for _ in range(packet.qdcount):
+            question = Question.from_bytes(data[cursor:], cloned_data)
+            cursor += len(question.raw)
+            questions.append(question)
+        packet.questions = questions
+
+        # answers
+        for item, count in [
+            ('answers', 'ancount'), ('authority_answers', 'nscount'), ('additional_answers', 'arcount')
+        ]:
+            answers = []
+            for _ in range(getattr(packet, count)):
+                answer = ResourceRecord.from_bytes(data[cursor:], cloned_data)
+                cursor += len(answer.raw)
+                answers.append(answer)
+            setattr(packet, item, answers)
 
         return packet
 
@@ -308,14 +389,15 @@ if __name__ == '__main__':
     # dns compression is not implemented, so if you change to google dns and see awkward responses
     # it is absolutely normal
     CLOUDFARE = '1.1.1.1'
+    domain = 'openclassrooms.com'
     questions = [
-        Question(qname='google.com', qtype=DNSTypes.A.value),
+        Question(qname=domain, qtype=DNSTypes.A.value),
     ]
     dns = DNS(questions=questions, qdcount=len(questions), rd=1)
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.settimeout(2)
-        print('sending dns queries to cloudfare')
+        print(f'sending dns A queries to cloudfare for domain {domain}')
         sock.sendto(dns.raw, (CLOUDFARE, 53))
 
         answers = []
@@ -323,7 +405,6 @@ if __name__ == '__main__':
         while truncated:
             data, _ = sock.recvfrom(1024)
             dns = DNS.from_bytes(data)
-            print(dns)
             answers.extend([*dns.answers, *dns.authority_answers, *dns.additional_answers])
 
             truncated = False if dns.tc == 0 else True
