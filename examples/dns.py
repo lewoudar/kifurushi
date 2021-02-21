@@ -1,4 +1,7 @@
-"""Implementation of DNS protocol"""
+"""
+In this example we will implement a DNS packet according to RFC 1035.
+There is a client example to show how to use it in real cases.
+"""
 import enum
 import ipaddress
 import random
