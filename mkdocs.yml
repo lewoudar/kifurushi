@@ -1,0 +1,26 @@
+site_name: Kifurushi
+site_description: kifurushi package documentation
+site_author: Kevin Tewouda
+site_url: https://kifurushi.readthedocs.io
+
+repo_name: lewoudar/kifurushi
+repo_url: https://github.com/lewoudar/kifurushi
+edit_uri: tree/main/docs
+
+theme: material
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Usage: usage.md
+  - API: api.md
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - mkautodoc
+  - codehilite
+
+extra_css:
+  - css/custom.css

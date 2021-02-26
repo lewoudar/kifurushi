@@ -22,42 +22,42 @@ RIGHT_SIGNED_LONG = 2 ** 63 - 1
 
 
 def rand_bytes():
-    """Returns an unsigned random byte value"""
+    """Returns an unsigned random byte value."""
     return random.randint(LEFT_BYTE, RIGHT_BYTE)  # nosec
 
 
 def rand_signed_bytes():
-    """Returns a signed random byte value"""
+    """Returns a signed random byte value."""
     return random.randint(LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE)  # nosec
 
 
 def rand_short():
-    """Returns an unsigned random short value"""
+    """Returns an unsigned random short value."""
     return random.randint(LEFT_SHORT, RIGHT_SHORT)  # nosec
 
 
 def rand_signed_short():
-    """Returns a signed random short value"""
+    """Returns a signed random short value."""
     return random.randint(LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT)  # nosec
 
 
 def rand_int():
-    """Returns an unsigned random int value"""
+    """Returns an unsigned random int value."""
     return random.randint(LEFT_INT, RIGHT_INT)  # nosec
 
 
 def rand_signed_int():
-    """Returns a signed random int value"""
+    """Returns a signed random int value."""
     return random.randint(LEFT_SIGNED_INT, RIGHT_SIGNED_INT)  # nosec
 
 
 def rand_long():
-    """Returns an unsigned random long value"""
+    """Returns an unsigned random long value."""
     return random.randint(LEFT_LONG, RIGHT_LONG)  # nosec
 
 
 def rand_signed_long():
-    """Returns a signed random int value"""
+    """Returns a signed random int value."""
     return random.randint(LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)  # nosec
 
 

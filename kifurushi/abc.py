@@ -57,7 +57,7 @@ class Field(ABC):
         """Returns a valid random value for this field."""
 
     def clone(self) -> 'Field':
-        """Returns a copy of the field"""
+        """Returns a copy of the field."""
         return copy.copy(self)
 
     @abstractmethod

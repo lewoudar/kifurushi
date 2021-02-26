@@ -67,15 +67,6 @@ class NumericField(HexMixin, CommonField):
     _value: int = attr.ib(init=False, validator=[attr.validators.instance_of(int), numeric_validator])
 
     def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
-        """
-        Computes the field value from the raw bytes and returns remaining bytes to parse from `data` if any.
-
-        **Parameters:**
-
-        * **data:**: The raw data currently being parsed by a packet object.
-        * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
-        when the value of the current field depends on other fields.
-        """
         self._value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
 
@@ -273,15 +264,6 @@ class FixedStringField(CommonField):
         super().__init__(name, default, format=f'{length}s')
 
     def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
-        """
-        Computes the field value from the raw bytes and returns remaining bytes to parse from `data` if any.
-
-        **Parameters:**
-
-        * **data:**: The raw data currently being parsed by a packet object.
-        * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
-        when the value of the current field depends on other fields.
-        """
         value: bytes = self._struct.unpack(data[:self._size])[0]
         self._value = value.decode()
         return data[self._size:]
@@ -417,7 +399,7 @@ class BitsField(HexMixin, Field):
 
     For example, if we take the [IPV4 header](https://en.wikipedia.org/wiki/IPv4) the first byte contains two
     information, the `version` (4 bits) and the `IHL` (4bits). To represent it we can define a field like the following:
-    `BitsField(FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')`
+    `BitsField([FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')`
     """
     _parts: List[FieldPart] = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(FieldPart)
