@@ -318,7 +318,7 @@ class DNS(Packet):
     ]
 
     def __init__(self, **kwargs):
-        self._field_mapping = []  # if we don't do this, we have an issue whe trying to instantiate self.questions
+        self._field_mapping = []  # if we don't do this, we have an issue when trying to instantiate self.questions
         self.questions: List[Question] = []
         self.answers: List[ResourceRecord] = []
         self.authority_answers: List[ResourceRecord] = []
@@ -389,8 +389,6 @@ class DNS(Packet):
 
 
 if __name__ == '__main__':
-    # dns compression is not implemented, so if you change to google dns and see awkward responses
-    # it is absolutely normal
     CLOUDFARE = '1.1.1.1'
     domain = 'openclassrooms.com'
     questions = [
