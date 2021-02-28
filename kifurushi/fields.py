@@ -62,7 +62,19 @@ class HexMixin:
 
 @attr.s(repr=False)
 class NumericField(HexMixin, CommonField):
-    """Base class for many numeric fields"""
+    """
+    Base class for many integer fields.
+
+    **Parameters:**
+
+    * **name:** The name of the field.
+    * **default:** A default value for the field.
+    * **format:** The format used by the [struct](https://docs.python.org/3/library/struct.html) module to allocate
+    the correct size in bytes of the field value. The value provided is validated against the following regex:
+    `r'b|B|h|h|H|i|I|q|Q|\d+s'`.
+    * **order:** Order used to format raw data using the `struct` module. Defaults to `"!"` (network). Valid values are
+    `"!"`, `"<"` (little-endian), `">"` (big-endian), `"@"` (native), `"="` (standard).
+    """
     _default: int = attr.ib(validator=[attr.validators.instance_of(int), numeric_validator])
     _value: int = attr.ib(init=False, validator=[attr.validators.instance_of(int), numeric_validator])
 
@@ -171,7 +183,7 @@ class SignedLongField(NumericField):
 class ByteEnumField(ByteField, EnumMixin):
     """
     Similar to ByteField, but has a third mandatory field, a dict or enum mapping values to their name
-    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    according to their meaning for the packet being forged / dissected. It will be used to pretty print
     value which can be useful when playing / debugging in the terminal.
     """
 
@@ -180,7 +192,7 @@ class ByteEnumField(ByteField, EnumMixin):
 class SignedByteEnumField(SignedByteField, EnumMixin):
     """
     Similar to SignedByteField, but has a third mandatory field, a dict or enum mapping values to their name
-    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    according to their meaning for the packet being forged / dissected. it will be used to pretty print
     value which can be useful when playing / debugging in the terminal.
     """
 
@@ -189,7 +201,7 @@ class SignedByteEnumField(SignedByteField, EnumMixin):
 class ShortEnumField(ShortField, EnumMixin):
     """
     Similar to ShortField, but has a third mandatory field, a dict or enum mapping values to their name
-    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    according to their meaning for the packet being forged / dissected. it will be used to pretty print
     value which can be useful when playing / debugging in the terminal.
     """
 
@@ -198,7 +210,7 @@ class ShortEnumField(ShortField, EnumMixin):
 class SignedShortEnumField(SignedShortField, EnumMixin):
     """
     Similar to SignedShortField, but has a third mandatory field, a dict or enum mapping values to their name
-    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    according to their meaning for the packet being forged / dissected. it will be used to pretty print
     value which can be useful when playing / debugging in the terminal.
     """
 
@@ -207,7 +219,7 @@ class SignedShortEnumField(SignedShortField, EnumMixin):
 class IntEnumField(IntField, EnumMixin):
     """
     Similar to IntField, but has a third mandatory field, a dict or enum mapping values to their name
-    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    according to their meaning for the packet being forged / dissected. it will be used to pretty print
     value which can be useful when playing / debugging in the terminal.
     """
 
@@ -216,7 +228,7 @@ class IntEnumField(IntField, EnumMixin):
 class SignedIntEnumField(SignedIntField, EnumMixin):
     """
     Similar to SignedIntField, but has a third mandatory field, a dict or enum mapping values to their name
-    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    according to their meaning for the packet being forged / dissected. it will be used to pretty print
     value which can be useful when playing / debugging in the terminal.
     """
 
@@ -225,7 +237,7 @@ class SignedIntEnumField(SignedIntField, EnumMixin):
 class LongEnumField(LongField, EnumMixin):
     """
     Similar to LongField, but has a third mandatory field, a dict or enum mapping values to their name
-    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    according to their meaning for the packet being forged / dissected. it will be used to pretty print
     value which can be useful when playing / debugging in the terminal.
     """
 
@@ -234,7 +246,7 @@ class LongEnumField(LongField, EnumMixin):
 class SignedLongEnumField(SignedLongField, EnumMixin):
     """
     Similar to ByteField, but has a third mandatory field, a dict or enum mapping values to their name
-    according to their meaning for the packet being forged / dissected. It will be use to pretty print
+    according to their meaning for the packet being forged / dissected. it will be used to pretty print
     value which can be useful when playing / debugging in the terminal.
     """
 

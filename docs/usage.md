@@ -282,7 +282,8 @@ raw bytes to send on the wire.
 !!! warning
     Take care to the names given to the fields of a packet. There are some reserved names that cannot be used because
     they are attributes of the [Packet](api.md#packet) class like `raw`, `fields`, `compute_value`, `hexdump`,
-    `random_packet` and `from_bytes`.
+    `random_packet` and `from_bytes`. Check the api documentation for the accurate list of `Packet` attributes and
+    methods.
 
 !!! note
     Don't hesitate to look at the [examples](https://github.com/lewoudar/kifurushi/tree/main/examples) folder to see 

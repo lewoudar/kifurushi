@@ -15,11 +15,12 @@ from kifurushi.utils.random_values import (
 
 @attr.s(repr=False)
 class Field(ABC):
+    """The abstract base class that **all** fields **must** inherit."""
 
     @property
     @abstractmethod
     def size(self) -> int:
-        """Returns the size in bytes of the field"""
+        """Returns the size in bytes of the field."""
 
     @property
     @abstractmethod
@@ -94,6 +95,19 @@ def name_validator(field: Field, _, name: str) -> None:
 # noinspection PyAbstractClass
 @attr.s(repr=False)
 class CommonField(Field):
+    """
+    A common interface for integer and fixed-size string fields.
+
+    **Parameters:**
+
+    * **name:** The name of the field.
+    * **default:** A default value for the field.
+    * **format:** The format used by the [struct](https://docs.python.org/3/library/struct.html) module to allocate
+    the correct size in bytes of the field value. The value provided is validated against the following regex:
+    `r'b|B|h|h|H|i|I|q|Q|\d+s'`.
+    * **order:** Order used to format raw data using the `struct` module. Defaults to `"!"` (network). Valid values are
+    `"!"`, `"<"` (little-endian), `">"` (big-endian), `"@"` (native), `"="` (standard).
+    """
     _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     _default: Any = attr.ib()
     _value: Any = attr.ib(init=False)
@@ -185,8 +199,6 @@ class CommonField(Field):
         return self._struct.pack(self._value)
 
 
-# Due to its nature, it is impossible to inherit from Field class because we can't have
-# a defined struct object here at instantiation. Some computations also need to change.
 @attr.s(slots=True, repr=False)
 class VariableStringField(Field):
     """
@@ -197,8 +209,9 @@ class VariableStringField(Field):
     * **name:** The name of the field.
     * **default:** A default value for the field. Defaults to "kifurushi".
     * **length:** An optional maximum length of the field.
-    * **order:** Order used to format raw data using `struct` module. Defaults to "!" (network). Valid values are
-    "!", "<" (little-endian), ">" (big-endian), "@" (native), "=" (standard).
+    * **order:** Order used to format raw data using the [struct](https://docs.python.org/3/library/struct.html) module.
+    Defaults to `"!"` (network). Valid values are `"!"`, `"<"` (little-endian), `">"` (big-endian), `"@"` (native),
+    `"="` (standard).
     """
     _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     _default: str = attr.ib(default='kifurushi', validator=attr.validators.instance_of(str))

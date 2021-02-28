@@ -7,6 +7,8 @@ repo_name: lewoudar/kifurushi
 repo_url: https://github.com/lewoudar/kifurushi
 edit_uri: tree/main/docs
 
+theme:
+  name: material
 
 nav:
   - Home: index.md
@@ -19,7 +21,8 @@ markdown_extensions:
       permalink: true
   - admonition
   - mkautodoc
-  - codehilite
+  - codehilite:
+      css_class: highlight
 
 extra_css:
   - css/custom.css

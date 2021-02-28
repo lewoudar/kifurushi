@@ -7,19 +7,20 @@ All the abstract classes that you can rely on when you want to implement your ow
 ### Field
 
 ::: kifurushi.abc.Field
-:docstring:
+    :docstring:
+    :members:
 
 ### CommonField
 
 ::: kifurushi.abc.CommonField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### VariableStringField
 
 ::: kifurushi.abc.VariableStringField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ## packet
 
@@ -28,18 +29,18 @@ Classes and helper functions to deal with protocols.
 ### Packet
 
 ::: kifurushi.packet.Packet
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### create_packet_class
 
 ::: kifurushi.packet.create_packet_class
-:docstring:
+    :docstring:
 
 ### extract_layers
 
 ::: kifurushi.packet.extract_layers
-:docstring:
+    :docstring:
 
 ## fields
 
@@ -48,164 +49,164 @@ Here is the list of all fields (except the mixins) defined in the project.
 ### HexMixin
 
 ::: kifurushi.fields.HexMixin
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### EnumMixin
 
 ::: kifurushi.fields.EnumMixin
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### NumericField
 
 ::: kifurushi.fields.NumericField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### ByteField
 
 ::: kifurushi.fields.ByteField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### ByteEnumField
 
 ::: kifurushi.fields.ByteEnumField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### SignedByteField
 
 ::: kifurushi.fields.SignedByteField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### SignedByteEnumField
 
 ::: kifurushi.fields.SignedByteEnumField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### ShortField
 
 ::: kifurushi.fields.ShortField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### ShortEnumField
 
 ::: kifurushi.fields.ShortEnumField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### SignedShortField
 
 ::: kifurushi.fields.SignedShortField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### SignedShortEnumField
 
 ::: kifurushi.fields.SignedShortEnumField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### IntField
 
 ::: kifurushi.fields.IntField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### IntEnumField
 
 ::: kifurushi.fields.IntEnumField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### SignedIntField
 
 ::: kifurushi.fields.SignedIntField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### SignedIntEnumField
 
 ::: kifurushi.fields.SignedIntEnumField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### LongField
 
 ::: kifurushi.fields.LongField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### LongEnumField
 
 ::: kifurushi.fields.LongEnumField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### SignedLongField
 
 ::: kifurushi.fields.SignedLongField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### SignedLongEnumField
 
 ::: kifurushi.fields.SignedLongEnumField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### FixedStringField
 
 ::: kifurushi.fields.FixedStringField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### FieldPart
 
 ::: kifurushi.fields.FieldPart
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### BitsField
 
 ::: kifurushi.fields.BitsField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### ByteBitsField
 
 ::: kifurushi.fields.ByteBitsField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### ShortBitsField
 
 ::: kifurushi.fields.ShortBitsField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### IntBitsField
 
 ::: kifurushi.fields.IntBitsField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### LongBitsField
 
 ::: kifurushi.fields.LongBitsField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ### ConditionalField
 
 ::: kifurushi.fields.ConditionalField
-:docstring:
-:members:
+    :docstring:
+    :members:
 
 ## random values
 
@@ -214,47 +215,47 @@ There are some utility functions to help you get a random but correct value for 
 ### rand_bytes
 
 ::: kifurushi.utils.random_values.rand_bytes
-:docstring:
+    :docstring:
 
 ### rand_signed_bytes
 
 ::: kifurushi.utils.random_values.rand_signed_bytes
-:docstring:
+    :docstring:
 
 ### rand_short
 
 ::: kifurushi.utils.random_values.rand_short
-:docstring:
+    :docstring:
 
 ### rand_signed_short
 
 ::: kifurushi.utils.random_values.rand_signed_short
-:docstring:
+    :docstring:
 
 ### rand_int
 
 ::: kifurushi.utils.random_values.rand_int
-:docstring:
+    :docstring:
 
 ### rand_signed_int
 
 ::: kifurushi.utils.random_values.rand_signed_int
-:docstring:
+    :docstring:
 
 ### rand_long
 
 ::: kifurushi.utils.random_values.rand_long
-:docstring:
+    :docstring:
 
 ### rand_signed_long
 
 ::: kifurushi.utils.random_values.rand_signed_long
-:docstring:
+    :docstring:
 
 ### rand_string
 
 ::: kifurushi.utils.random_values.rand_string
-:docstring:
+    :docstring:
 
 There are also constants if you need to check some numeric values or implement custom fields.
 
@@ -280,9 +281,9 @@ There are also constants if you need to check some numeric values or implement c
 ### checksum
 
 ::: kifurushi.utils.network.checksum
-:docstring:
+    :docstring:
 
 ### hexdump
 
 ::: kifurushi.utils.network.hexdump
-:docstring:
+    :docstring:
