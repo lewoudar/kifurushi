@@ -7,7 +7,6 @@ repo_name: lewoudar/kifurushi
 repo_url: https://github.com/lewoudar/kifurushi
 edit_uri: tree/main/docs
 
-theme: material
 
 nav:
   - Home: index.md

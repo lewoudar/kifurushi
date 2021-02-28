@@ -13,5 +13,5 @@ don't know the scapy library...). It would be glad to just use the scapy ability
 **huge** protocol library. This is where the idea of *kifurushi* comes from.
 
 It is a simple library that will help you forge network data quickly. It is less capable than scapy because its specific
-goal is to implement a concrete protocol as opposed to scapy which makes it possible to give free rein to its
+goal is to implement a concrete protocol as opposed to scapy which makes it possible to give free rein to our
 imagination. So if you find that your needs cannot be simply express with kifurushi, you probably need to use scapy.

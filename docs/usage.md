@@ -3,7 +3,7 @@
 ## Basics
 
 The usage of kifurushi is pretty straightforward. Forge a protocol consists in many cases in just assembling its fields.
-Here is an example
+Here is an example:
 
 ```python
 import enum
@@ -24,8 +24,7 @@ class Disney(Packet):
     ]
 ```
 
-you create a new protocol by inheriting the [Packet](api.md#packet) class. In many cases the protocol implementation
-only consists of declaring fields belonging to that protocol. In this example, we have 3 fields:
+You create a new protocol by inheriting the [Packet](api.md#packet) class. In this example, we have 3 fields:
 
 * A two-bytes integer field called *mickey* whose default value is 2.
 * A one byte integer field called *minnie* whose default value is 3. You notice the `hex` keyword set to true. It is to
@@ -61,15 +60,16 @@ Notes:
 * The first statement instantiates a `Disney` object with value `mickey` attribute set to 1.
   
 * The second statement uses the `show` method to print a detailed state of the object. Each line represents an attribute
-  with its **name**, its **type**, its **current value** and its **default value** between the parenthesis.
+  with its **name**, its **type**, its **current value** and its **default value** between the parenthesis. Notice that
+  *minnie* values are represented in hexadecimal thanks to the `hex` attribute set to `True` on field object.
   
 * The next three statements set the `donald` attribute with value 2. As you can see, we can use the enumeration
-  `Mood.cool`, its name or its value. `kifurushi` knows how to handle these cases.
+  `Mood.cool`, its name or its value. kifurushi knows how to handle these cases.
   
 * The penultimate statement is the `raw` property which computes the raw bytes from the protocol fields. This is useful
   when you want to send data over the network.
   
-* The last statement shows how you can convert data received over the wire to a protocol instance.
+* The last statement shows how you can convert data received over the network to a protocol instance.
 
 You can also dynamically implement a protocol using the [create_packet_class](api.md#create_packet_class) helper
 function.
@@ -92,7 +92,7 @@ print(d)  # <Disney: mickey=1, minnie=0x3, donald=1>
 ## Implement a custom field
 
 Sometimes, you will feel that the default [fields](api.md#fields) implemented by kifurushi are not enough for your use
-case. In this case you will need to implement a custom type by inheriting the [Field](api.md#field). Let's see an
+case. In this case you will need to implement a custom type by inheriting the [Field](api.md#field) class. Let's see an
 example with a field representing an IP value. Many protocols like 
 [ICMP](https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol) or 
 [DNS](https://en.wikipedia.org/wiki/Domain_Name_System) needs this type of field.
@@ -172,7 +172,7 @@ class IPField(Field):
         # packet can be useful in some circumstances where field value depends on previous fields already parsed
         self._address = ipaddress.ip_address(data[:self.size])
         # it is important to return the remaining bytes after those representing this field so that other fields
-        # can also processed their value
+        # can also process their value
         return data[self.size:]
 
     def __repr__(self):
@@ -182,25 +182,25 @@ class IPField(Field):
 Notes:
 
 * The `Field` class defines an interface with common methods that all fields must implement and this is what is done in
-the previous example.
+  the previous example.
   
 * The `name` attribute is important to define. It is used by the packet where the field will belong to set an attribute
-using the value of the `name` attribute. The reason why this field is not in the `Field` interface is the
-[BitsField](api.md#bitsfield) and its descendants. We will talk about this field later in the documentation.
+  using the value of the `name` attribute. The reason why this attribute is not in the `Field` interface is the
+  [BitsField](api.md#bitsfield) and its descendants. We will talk about this field later in the documentation.
   
 * The code should be simple to understand, just about the `compute_field` method, this is what is called for every field
-of a packet when the `Packet.from_bytes` method is used. The first argument is the remaining bytes to parse from input
-data, and the second argument is the packet currently processing the data. This second argument is useful when the
-value of the current field depends on fields already parsed. We can then retrieved them via the packet object. It is
-also important to return remaining bytes after removing those corresponding to the field. This way, other fields will
-also be able to process their value.
+  of a packet when the `Packet.from_bytes` method is used. The first argument is the remaining bytes to parse from input
+  data, and the second argument is the packet currently processing the data. This second argument is useful when the
+  value of the current field depends on fields already parsed. We can then retrieved them via the packet object. It is
+  also important to return remaining bytes after removing those corresponding to the field. This way, other fields will
+  also be able to process their value.
 
 ## Customize a packet class
 
 Sometimes the default implementation of the [Packet](api.md#packet) class is not sufficient for your needs, it comes in
 handy to adjust some methods as you wish. `Packet` is a python class, so you can inherit it and override the methods
-you want, lets show an example by representing the [IPV4](https://en.wikipedia.org/wiki/IPv4). It will also be the
-occasion to show the use of a [BitsField](api.md#bitsfield).
+you want, lets show an example by representing the [IPV4](https://en.wikipedia.org/wiki/IPv4) protocol.
+It will also be the occasion to show the use of a [BitsField](api.md#bitsfield).
 
 We will not take in account `options` field to keep it simple.
 
@@ -228,8 +228,8 @@ class IPv4(Packet):
     ]
 
     def __init__(self, **kwargs):
-        self._field_mapping = []  # if we don't do this, we have an issue when
-        # trying to instantiate self.payload
+        # if we don't write the following line, we will have an issue when trying to instantiate self.payload
+        self._field_mapping = []
         self.payload = b''
         # here we take in account another keyword attribute in addition to those defined in fields.
         # It represents the upper layers transported by the IP packet, check the raw method to see
@@ -251,6 +251,7 @@ class IPv4(Packet):
         return b''.join(field.raw(self) for field in self._fields) + self.payload
 
 ip = IPv4(dscp=1, length=20)
+print(ip)
 # <IPv4: version=4, ihl=5, dscp=1, ecn=0, length=20, identification=0, flags=0, offset=0,
 # ttl=12, protocol=1, checksum=0, src=2130706433, dest=2130706433>
 ```
@@ -279,15 +280,15 @@ payload.
 raw bytes to send on the wire.
   
 !!! warning
-  Take care to the names given to the fields of a packet. There are some reserved names that cannot be used because
-  they are attributes of the [Packet](api.md#packet) class like `raw`, `fields`, `compute_value`, `hexdump`,
-  `random_packet`, `from_bytes`.
+    Take care to the names given to the fields of a packet. There are some reserved names that cannot be used because
+    they are attributes of the [Packet](api.md#packet) class like `raw`, `fields`, `compute_value`, `hexdump`,
+    `random_packet` and `from_bytes`.
 
 !!! note
-  Don't hesitate to look at the [examples](https://github.com/lewoudar/kifurushi/tree/main/examples) folder to see more
-  examples of protocol implementations with kifurushi. You will see usage of the 
-  [ConditionalField](api.md#conditionalfield) which comes in handy when the presence of a field in a packet depends on
-  other fields.
+    Don't hesitate to look at the [examples](https://github.com/lewoudar/kifurushi/tree/main/examples) folder to see 
+    more examples of protocol implementations with kifurushi. You will see usage of the 
+    [ConditionalField](api.md#conditionalfield) which comes in handy when the presence of a field in a packet depends on
+    other fields.
 
 ## Miscellaneous
 
@@ -308,6 +309,7 @@ fields = [
 disney_class = create_packet_class('Disney', fields)
 d = disney_class(mickey=1)
 print(hexdump(d.raw))  # '0000  00 01 03 00 00 00 01                             .......'
+
 # a Packet object has a property hexdump which internally calls the hexdump function
 print(d.hexdump)  # '0000  00 01 03 00 00 00 01                             .......'
 ```
@@ -315,9 +317,30 @@ print(d.hexdump)  # '0000  00 01 03 00 00 00 01                             ....
 There is also the [checksum](api.md#checksum) function to compute some packet checksums. Look the previous section for
 an example with the IPv4 protocol.
 
+Finally, there is the [extract_layers](api.md#extract_layers) function to help you dissect many protocols from raw data.
+For example, let's consider again the `IPv4` protocol we implemented earlier. If you combined it with an `ICMP` protocol
+(we assume we have also implemented this protocol), you will probably end with a code like the following to send it over
+the wire: `socket.sendto(ICMP(type=8).raw + IPv4().raw, address)`.
+
+Now if you want to receive the ICMP response from the wire, what will you do? `ICMP.from_bytes(data)` ? This will not
+work because you send **ICMP** + **IPv4** data over the wire and you will receive also the two data structures from the
+wire. So to get these layers, you can write a code like the following
+
+```python
+from kifurushi import extract_layers
+data, _ = socket.recvfrom(4096)
+
+icmp, ip = extract_layers(data, ICMP, IPv4)
+```
+
+So, you pass to `extract_layers` the data and the list of layers (order is important) you expect to receive from 
+the network. In response, you will get layer *instances* corresponding to the different classes passed to the
+function.
+
 ### random helpers
 
-Kifurushi carries also some constants and random helpers useful when you want to implement custom fields.
+Kifurushi carries also some constants and random [helpers](api.md#random-values) useful when you want to implement
+custom fields.
 
 ```python
 from kifurushi import LEFT_BYTE, RIGHT_BYTE, rand_bytes
