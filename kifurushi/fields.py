@@ -62,7 +62,7 @@ class HexMixin:
 
 @attr.s(repr=False)
 class NumericField(HexMixin, CommonField):
-    """
+    r"""
     Base class for many integer fields.
 
     **Parameters:**

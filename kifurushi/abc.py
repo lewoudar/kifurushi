@@ -95,7 +95,7 @@ def name_validator(field: Field, _, name: str) -> None:
 # noinspection PyAbstractClass
 @attr.s(repr=False)
 class CommonField(Field):
-    """
+    r"""
     A common interface for integer and fixed-size string fields.
 
     **Parameters:**
