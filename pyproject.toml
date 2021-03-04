@@ -3,6 +3,25 @@ name = "kifurushi"
 version = "0.1.0"
 description = "A simple library to forge network packets"
 authors = ["lewoudar <lewoudar@gmail.com>"]
+readme = "README.md"
+keywords = ["kifurushi", "networking", "protocol", "sans-io", "packet"]
+
+homepage = "https://kifurushi.readthedocs.io/en/stable"
+repository = "https://github.com/lewoudar/kifurushi"
+documentation = "https://kifurushi.readthedocs.io/en/stable"
+
+classifiers = [
+    "Intended Audience :: Developers",
+    "Topic :: System :: Networking",
+    "Operating System :: OS Independent",
+]
+
+packages = [
+    { include = "kifurushi" }
+]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/lewoudar/kifurushi/issues"
 
 [tool.poetry.dependencies]
 python = "^3.6"
