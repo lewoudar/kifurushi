@@ -36,7 +36,7 @@ With [poetry](https://python-poetry.org/docs/) an alternative package manager:
 poetry add kifurushi
 ```
 
-kifurushi starts working from **python3.6** and has one dependency:
+kifurushi starts working from **python3.6** and also supports **pypy3**. It has one dependency:
 * [attrs](https://www.attrs.org/en/stable/): A library helping to write classes without pain.
 
 ## Documentation
