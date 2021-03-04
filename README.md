@@ -2,7 +2,7 @@
 
 [![Pypi version](https://img.shields.io/pypi/v/kifurushi.svg)](https://pypi.org/project/kifurushi/)
 ![](https://github.com/lewoudar/kifurushi/workflows/CI/badge.svg)
-[![Coverage Status](https://codecov.io/gh/lewoudar/kifurushi/branch/master/graphs/badge.svg?branch=master)](https://codecov.io/gh/lewoudar/kifurushi)
+[![Coverage Status](https://codecov.io/gh/lewoudar/kifurushi/branch/main/graphs/badge.svg?branch=main)](https://codecov.io/gh/lewoudar/kifurushi)
 [![Documentation Status](https://readthedocs.org/projects/kifurushi/badge/?version=latest)](https://kifurushi.readthedocs.io/en/latest/?badge=latest)
 [![License Apache 2](https://img.shields.io/hexpm/l/plug.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
