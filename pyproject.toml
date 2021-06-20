@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "A simple library to forge network packets"
 authors = ["lewoudar <lewoudar@gmail.com>"]
 readme = "README.md"
+license = "Apache-2.0"
 keywords = ["kifurushi", "networking", "protocol", "sans-io", "packet"]
 
 homepage = "https://kifurushi.readthedocs.io/en/stable"
