@@ -210,14 +210,14 @@ class VariableStringField(Field):
     **Parameters:**
 
     * **name:** The name of the field.
-    * **default:** A default value for the field. Defaults to "kifurushi" or b"kifurushi" depending of the string type.
-    See explanation of `is_bytes` parameter below.
+    * **default:** A default value for the field. Defaults to `kifurushi` or `b'kifurushi'` depending of the
+    string type. See explanation of `is_bytes` parameter below.
     * **length:** An optional maximum length of the field.
     * **order:** Order used to format raw data using the [struct](https://docs.python.org/3/library/struct.html) module.
     Defaults to `"!"` (network). Valid values are `"!"`, `"<"` (little-endian), `">"` (big-endian), `"@"` (native),
     `"="` (standard).
     * **is_bytes:** keyword-only boolean parameter to know if this field represents raw bytes or utf-8 text.
-    Defaults to False meaning it is text which is considered by default.
+    Defaults to `False` meaning it is text which is considered by default.
     """
     _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     # is_bytes must come before default, look at default "default" factory method to see the relation.
