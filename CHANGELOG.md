@@ -4,6 +4,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2021-08-18
+
+## Changed
+
+- The class `VariableStringField` now accepts a keyword-only parameter `is_bytes` to tell if we are dealing with text
+  data or raw bytes.
+
 ### Added
 
 - Tests are now passed on pypy3 in github actions

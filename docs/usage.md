@@ -187,7 +187,7 @@ Notes:
 * The `name` attribute is important to define. It is used by the packet where the field will belong to set an attribute
   using the value of the `name` attribute. The reason why this attribute is not in the `Field` interface is the
   [BitsField](api.md#bitsfield) and its descendants. We will talk about this field later in the documentation.
-  
+
 * The code should be simple to understand, just about the `compute_field` method, this is what is called for every field
   of a packet when the `Packet.from_bytes` method is used. The first argument is the remaining bytes to parse from input
   data, and the second argument is the packet currently processing the data. This second argument is useful when the
@@ -195,12 +195,49 @@ Notes:
   also important to return remaining bytes after removing those corresponding to the field. This way, other fields will
   also be able to process their value.
 
+## Implement a variable field
+
+There are cases where field values can only be determined by other fields giving the length or some other information to
+compute the value of the desired field. The abstract [VariableStringField](api.md#variablestringfield) aims to solve
+this kind of issue. Let's imagine we have a protocol `Dummy` with three fields: _version,_ _length_ and _data_. The
+latter depends on the second to get its value. This is how we can implement _data_ field.
+
+```python
+from typing import Optional
+from kifurushi import Packet, VariableStringField, ByteField, ShortField
+
+
+class DataField(VariableStringField):
+    def compute_value(self, data: bytes, packet: Packet = None) -> Optional[bytes]:
+        self._value = data[:packet.length].decode()
+        return data[packet.rdlength:]
+
+
+class Dummy(Packet):
+    __fields__ = [
+        ByteField('version', 1),
+        ShortField('length', 28),
+        DataField('data')
+    ]
+```
+
+Notes:
+
+- The only abstract method to implement is `compute_value`. It takes the remaining raw bytes to parse and the _packet_
+  object currently constructed. Fields already parsed can be accessed as properties of the _packet_ object. In our case
+  we use the `length` field to know the exact length of `data`. We can therefore extract the value and return the
+  remaining bytes. This is important because it will allow the _packet_ to process other fields if any.
+- `VariableStringField` has a property `_is_bytes` which helps to know if we want to process the value as `str` or
+  `bytes`. By default, it is `False` meaning that we are dealing with `str`. This is why we use the `str.decode` method
+  in the previous example. If you know that you want to treat the data as raw bytes, you probably don't want to decode
+  the data. `VariableStringField` has a parameter `is_bytes` in its constructor to specify the nature of the data.
+
 ## Customize a packet class
 
 Sometimes the default implementation of the [Packet](api.md#packet) class is not sufficient for your needs, it comes in
-handy to adjust some methods as you wish. `Packet` is a python class, so you can inherit it and override the methods
-you want, lets show an example by representing the [IPV4](https://en.wikipedia.org/wiki/IPv4) protocol.
-It will also be the occasion to show the use of a [BitsField](api.md#bitsfield).
+handy to adjust some methods as you wish. `Packet` is a python class, so you can inherit it and override the methods you
+want, lets show an example by representing the [IPV4](https://en.wikipedia.org/wiki/IPv4) protocol. It will also be the
+occasion to show the use of a [BitsField](api.md#bitsfield).
 
 We will not take in account `options` field to keep it simple.
 

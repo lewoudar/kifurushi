@@ -91,9 +91,9 @@ class TestCommonField:
             DummyField(name, 2, format='b')
 
         assert (
-            'DummyField name must starts with a letter and follow standard'
-            f' rules for declaring a variable in python but you provided {name}'
-        ) == str(exc_info.value)
+                   'DummyField name must starts with a letter and follow standard'
+                   f' rules for declaring a variable in python but you provided {name}'
+               ) == str(exc_info.value)
 
     # tests format attribute
 
@@ -206,19 +206,28 @@ class TestVariableStringField:
             DummyStringField(name)
 
         assert (
-            'DummyStringField name must starts with a letter and follow standard'
-            f' rules for declaring a variable in python but you provided {name}'
-        ) == str(exc_info.value)
+                   'DummyStringField name must starts with a letter and follow standard'
+                   f' rules for declaring a variable in python but you provided {name}'
+               ) == str(exc_info.value)
 
     # noinspection PyTypeChecker
-    @pytest.mark.parametrize('default', [b'hello', 4.3])
-    def test_should_raise_error_when_default_is_not_a_string(self, default):
+    @pytest.mark.parametrize(('default', 'is_bytes'), [
+        (b'hello', False),
+        (4.3, False),
+        ('hello', True),
+        (4.3, True)
+    ])
+    def test_should_raise_error_when_default_is_not_a_string(self, default, is_bytes):
         with pytest.raises(TypeError):
-            DummyStringField('foo', default)
+            DummyStringField('foo', default, is_bytes=is_bytes)
 
-    def test_should_return_kifurushi_when_no_default_value_is_given(self):
-        field = DummyStringField('foo')
-        assert 'kifurushi' == field.default
+    @pytest.mark.parametrize(('default', 'is_bytes'), [
+        ('kifurushi', False),
+        (b'kifurushi', True)
+    ])
+    def test_should_return_kifurushi_when_no_default_value_is_given(self, default, is_bytes):
+        field = DummyStringField('foo', is_bytes=is_bytes)
+        assert default == field.default
 
     # noinspection PyTypeChecker
     @pytest.mark.parametrize('max_length', [4.5, '4'])
@@ -237,17 +246,25 @@ class TestVariableStringField:
         with pytest.raises(ValueError):
             DummyStringField('foo', order=order)
 
-    def test_should_correctly_instantiate_field(self):
-        field = DummyStringField('fruit', 'apple')
+    @pytest.mark.parametrize(('default', 'is_bytes'), [
+        ('apple', False),
+        (b'apple', True)
+    ])
+    def test_should_correctly_instantiate_field(self, default, is_bytes):
+        field = DummyStringField('fruit', default, is_bytes=is_bytes)
 
         assert 'fruit' == field.name
-        assert 'apple' == field.default == field.value
+        assert default == field.default == field.value
         assert field.max_length is None
 
     # test field representation
 
-    def test_should_returns_correct_representation_when_calling_repr_function(self):
-        field = DummyStringField('fruit', 'apple', 50)
+    @pytest.mark.parametrize(('default', 'is_bytes'), [
+        ('apple', False),
+        (b'apple', True)
+    ])
+    def test_should_returns_correct_representation_when_calling_repr_function(self, default, is_bytes):
+        field = DummyStringField('fruit', default, 50, is_bytes=is_bytes)
 
         assert (
                    f'<{field.__class__.__name__}: name={field.name}, value={field.value},'
@@ -256,60 +273,83 @@ class TestVariableStringField:
 
     # test value setting
 
-    @pytest.mark.parametrize('value', [b'hello', 4])
-    def test_should_raise_error_when_giving_value_is_not_a_string(self, value):
-        field = DummyStringField('apple')
+    @pytest.mark.parametrize(('value', 'is_bytes', 'message'), [
+        (4, False, 'fruit value must be bytes or string but you provided 4'),
+        (4, True, 'fruit value must be bytes or string but you provided 4'),
+        ('banana', True, 'fruit value must be bytes but you provided banana'),
+        (b'banana', False, "fruit value must be a string but you provided b'banana'")
+    ])
+    def test_should_raise_error_when_giving_value_is_not_a_string(self, value, is_bytes, message):
+        field = DummyStringField('fruit', is_bytes=is_bytes)
         with pytest.raises(TypeError) as exc_info:
             field.value = value
 
-        assert f'{field.name} value must be a string but you provided {value}' == str(exc_info.value)
+        assert message == str(exc_info.value)
 
-    def test_should_raise_error_when_giving_value_has_a_length_greater_than_max_length_if_given(self):
-        field = DummyStringField('fruit', max_length=20)
+    @pytest.mark.parametrize(('value', 'is_bytes'), [
+        ('b' * 21, False),
+        (b'b' * 21, True)
+    ])
+    def test_should_raise_error_when_giving_value_has_a_length_greater_than_max_length_if_given(self, value, is_bytes):
+        field = DummyStringField('fruit', max_length=20, is_bytes=is_bytes)
         with pytest.raises(ValueError) as exc_info:
-            field.value = 'b' * 21
+            field.value = value
 
         assert f'{field.name} value must be less or equal than maximum length (20)' == str(exc_info.value)
 
-    def test_should_set_value_when_giving_correct_input(self):
-        field = DummyStringField('fruit', max_length=20)
-        given_value = 'b' * 20
+    @pytest.mark.parametrize(('value', 'is_bytes'), [
+        ('b' * 20, False),
+        (b'b' * 20, True)
+    ])
+    def test_should_set_value_when_giving_correct_input(self, value, is_bytes):
+        field = DummyStringField('fruit', max_length=20, is_bytes=is_bytes)
+        given_value = value
         field.value = given_value
 
         assert given_value == field.value
 
     # tests of raw method
 
-    def test_raw_property_returns_correct_value(self):
-        field = DummyStringField('fruit')
-        field.value = 'banana'
+    @pytest.mark.parametrize(('value', 'is_bytes'), [
+        ('banana', False),
+        (b'banana', True)
+    ])
+    def test_raw_property_returns_correct_value(self, value, is_bytes):
+        field = DummyStringField('fruit', is_bytes=is_bytes)
+        field.value = value
 
         assert b'banana' == field.raw()
 
     # test of struct_format property
 
-    def test_struct_format_returns_correct_value(self):
-        default = 'banana'
-        field = DummyStringField('fruit', default)
+    @pytest.mark.parametrize(('default', 'value', 'is_bytes'), [
+        ('banana', 'apple', False),
+        (b'banana', b'apple', True)
+    ])
+    def test_struct_format_returns_correct_value(self, default, value, is_bytes):
+        field = DummyStringField('fruit', default, is_bytes=is_bytes)
         assert f'{field._order}{len(default)}' == field.struct_format
 
-        value = 'hello'
         field.value = value
         assert f'{field._order}{len(value)}' == field.struct_format
 
     # test of size property
 
-    def test_size_property_returns_correct_value(self):
-        value = 'banana'
-        field = DummyStringField('fruit', 'hello')
+    @pytest.mark.parametrize(('default', 'value', 'is_bytes'), [
+        ('apple', 'banana', False),
+        (b'apple', b'banana', True)
+    ])
+    def test_size_property_returns_correct_value(self, default, value, is_bytes):
+        field = DummyStringField('fruit', default, is_bytes=is_bytes)
         field.value = value
 
         assert len(value) == field.size
 
     # test of clone method
 
-    def test_should_return_a_copy_of_the_field_when_calling_clone_method(self):
-        field = DummyStringField('fruit')
+    @pytest.mark.parametrize('is_bytes', [False, True])
+    def test_should_return_a_copy_of_the_field_when_calling_clone_method(self, is_bytes):
+        field = DummyStringField('fruit', is_bytes=is_bytes)
         cloned_field = field.clone()
 
         assert cloned_field == field
@@ -317,13 +357,14 @@ class TestVariableStringField:
 
     # test of random_value method
 
-    @pytest.mark.parametrize(('arguments', 'length'), [
-        ({'default': 'hellboy'}, 7),
-        ({'max_length': 30}, 30)
+    @pytest.mark.parametrize(('arguments', 'length', 'string_class'), [
+        ({'default': 'hellboy'}, 7, str),
+        ({'default': b'hellboy', 'is_bytes': True}, 7, bytes),
+        ({'max_length': 30}, 30, str)
     ])
-    def test_should_return_a_correct_random_string_when_calling_random_value(self, arguments, length):
+    def test_should_return_a_correct_random_string_when_calling_random_value(self, arguments, length, string_class):
         field = DummyStringField('foo', **arguments)
         random_string = field.random_value()
 
-        assert isinstance(random_string, str)
+        assert isinstance(random_string, string_class)
         assert length == len(random_string)

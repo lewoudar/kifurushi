@@ -3,7 +3,7 @@ import copy
 import string
 import struct
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, AnyStr, TYPE_CHECKING
 
 import attr
 
@@ -11,6 +11,9 @@ from kifurushi.utils.random_values import (
     rand_signed_bytes, rand_bytes, rand_signed_short, rand_short, rand_signed_int, rand_int, rand_signed_long,
     rand_long, rand_string
 )
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .packet import Packet
 
 
 @attr.s(repr=False)
@@ -62,7 +65,7 @@ class Field(ABC):
         return copy.copy(self)
 
     @abstractmethod
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
         """
         Computes the field value from the raw bytes and returns remaining bytes to parse from `data` if any.
 
@@ -187,7 +190,7 @@ class CommonField(Field):
     def __repr__(self):
         return f'<{self.__class__.__name__}: name={self._name}, value={self._value}, default={self._default}>'
 
-    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+    def raw(self, packet: 'Packet' = None) -> bytes:
         """
         Returns the representation of field value in bytes as it will be sent on the network.
 
@@ -207,25 +210,40 @@ class VariableStringField(Field):
     **Parameters:**
 
     * **name:** The name of the field.
-    * **default:** A default value for the field. Defaults to "kifurushi".
+    * **default:** A default value for the field. Defaults to `kifurushi` or `b'kifurushi'` depending of the
+    string type. See explanation of `is_bytes` parameter below.
     * **length:** An optional maximum length of the field.
     * **order:** Order used to format raw data using the [struct](https://docs.python.org/3/library/struct.html) module.
     Defaults to `"!"` (network). Valid values are `"!"`, `"<"` (little-endian), `">"` (big-endian), `"@"` (native),
     `"="` (standard).
+    * **is_bytes:** keyword-only boolean parameter to know if this field represents raw bytes or utf-8 text.
+    Defaults to `False` meaning it is text which is considered by default.
     """
     _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
-    _default: str = attr.ib(default='kifurushi', validator=attr.validators.instance_of(str))
+    # is_bytes must come before default, look at default "default" factory method to see the relation.
+    _is_bytes: bool = attr.ib(default=False, kw_only=True, validator=attr.validators.instance_of(bool))
+    _default: AnyStr = attr.ib(validator=attr.validators.instance_of((str, bytes)))
     _max_length: Optional[int] = attr.ib(
         default=None, validator=attr.validators.optional(attr.validators.instance_of(int))
     )
     _order: str = attr.ib(default='!', validator=attr.validators.in_(['<', '>', '!', '@', '=']))
-    _value: str = attr.ib(init=False)
+    _value: AnyStr = attr.ib(init=False)
 
     def __attrs_post_init__(self):
         if self._max_length is not None and len(self._default) > self._max_length:
             raise ValueError(f'default must be less or equal than maximum length ({self._max_length})')
 
+        if isinstance(self._default, str) and self._is_bytes:
+            raise TypeError('default must be a string')
+
+        if isinstance(self._default, bytes) and not self._is_bytes:
+            raise TypeError('default must be bytes')
+
         self._value = self._default
+
+    @_default.default
+    def _get_default_value(self) -> AnyStr:
+        return b'kifurushi' if self._is_bytes else 'kifurushi'
 
     @property
     def name(self) -> str:
@@ -233,7 +251,7 @@ class VariableStringField(Field):
         return self._name
 
     @property
-    def default(self) -> str:
+    def default(self) -> AnyStr:
         """Returns field's default value."""
         return self._default
 
@@ -243,13 +261,19 @@ class VariableStringField(Field):
         return self._max_length
 
     @property
-    def value(self) -> str:
+    def value(self) -> AnyStr:
         """Returns internal string."""
         return self._value
 
     @value.setter
-    def value(self, value: str) -> None:
-        if not isinstance(value, str):
+    def value(self, value: AnyStr) -> None:
+        if not isinstance(value, (str, bytes)):
+            raise TypeError(f'{self._name} value must be bytes or string but you provided {value}')
+
+        if isinstance(value, str) and self._is_bytes:
+            raise TypeError(f'{self._name} value must be bytes but you provided {value}')
+
+        if isinstance(value, bytes) and not self._is_bytes:
             raise TypeError(f'{self._name} value must be a string but you provided {value}')
 
         if self._max_length is not None and len(value) > self._max_length:
@@ -257,7 +281,7 @@ class VariableStringField(Field):
 
         self._value = value
 
-    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+    def raw(self, packet: 'Packet' = None) -> bytes:
         """
         Returns the representation of field value in bytes as it will be sent on the network.
 
@@ -266,6 +290,8 @@ class VariableStringField(Field):
         * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
         when the computation of the field value depends on other fields.
         """
+        if self._is_bytes:
+            return self._value
         return self._value.encode()
 
     def __repr__(self):
@@ -285,7 +311,7 @@ class VariableStringField(Field):
         return len(self._value)
 
     @abstractmethod
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
         """
         Sets internal string value and returns remaining bytes from `data` if any.
 
@@ -303,4 +329,5 @@ class VariableStringField(Field):
         of the default attribute.
         """
         length = self._max_length if self._max_length is not None else len(self._default)
-        return rand_string(length)
+        random_string = rand_string(length)
+        return random_string if not self._is_bytes else random_string.encode()

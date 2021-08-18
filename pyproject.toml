@@ -30,7 +30,7 @@ python = "^3.6"
 attrs = "^20.3.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^6.0"
 scapy = "^2.4.4"
 bandit = "^1.7.0"
 flake8 = "^3.8.4"
@@ -41,6 +41,10 @@ mkautodoc = "^0.1.0"
 mkdocs-material = "^7.0.3"
 codecov = "^2.1.11"
 nox = "^2020.12.31"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=kifurushi --cov-report html --cov-report xml"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
