@@ -27,7 +27,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.6"
-attrs = "^20.3.0"
+attrs = "^21.2.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.0"

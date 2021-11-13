@@ -258,8 +258,8 @@ class ResourceRecord(Packet):
         ConditionalField(DomainNameField('kifurushi.io', 'cname'), lambda p: p.type == DNSTypes.CNAME.value),
         ConditionalField(DomainNameField('kifurushi.io', 'ns'), lambda p: p.type == DNSTypes.NS.value),
         ConditionalField(DomainNameField('1.0.0.127.in-addr.arpa', 'ptr'), lambda p: p.type == DNSTypes.PTR.value),
-        ConditionalField(TxtField('txt', 'kifurushi'), lambda p: p.type == DNSTypes.TXT.value),
-        ConditionalField(TxtField('spf', 'kifurushi'), lambda p: p.type == DNSTypes.SPF.value)
+        ConditionalField(TxtField('txt', 'kifurushi', decode=True), lambda p: p.type == DNSTypes.TXT.value),
+        ConditionalField(TxtField('spf', 'kifurushi', decode=True), lambda p: p.type == DNSTypes.SPF.value)
     ]
 
     @classmethod
