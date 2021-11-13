@@ -217,7 +217,7 @@ class Dummy(Packet):
     __fields__ = [
         ByteField('version', 1),
         ShortField('length', 28),
-        DataField('data')
+        DataField('data', decode=True)
     ]
 ```
 
@@ -227,10 +227,10 @@ Notes:
   object currently constructed. Fields already parsed can be accessed as properties of the _packet_ object. In our case
   we use the `length` field to know the exact length of `data`. We can therefore extract the value and return the
   remaining bytes. This is important because it will allow the _packet_ to process other fields if any.
-- `VariableStringField` has a property `_is_bytes` which helps to know if we want to process the value as `str` or
-  `bytes`. By default, it is `False` meaning that we are dealing with `str`. This is why we use the `str.decode` method
-  in the previous example. If you know that you want to treat the data as raw bytes, you probably don't want to decode
-  the data. `VariableStringField` has a parameter `is_bytes` in its constructor to specify the nature of the data.
+- `VariableStringField` has a parameter `decode` which helps it to know the nature of the data we are manipulating. It
+  will then perform some checks when setting the value, getting a random value, etc... Since we set `decode` to
+  `True` in the previous example, we had to call the `decode` method when computing the value from raw data to have an
+  internal value which is a string.
 
 ## Customize a packet class
 
