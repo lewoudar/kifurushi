@@ -255,19 +255,19 @@ class SignedLongEnumField(SignedLongField, EnumMixin):
 
 
 class FixedStringField(CommonField):
+    """
+    A field representing string data when length known in advance.
+
+    **Parameters:**
+
+    * **name:** The name of the field.
+    * **default:** A default value for the field.
+    * **length:** The length of the field.
+    * **decode:** keyword-only boolean parameter to know if this field represents raw bytes or utf-8 text.
+    Defaults to `False` meaning it is bytes which is considered by default.
+    """
 
     def __init__(self, name: str, default: str, length: int, *, decode: bool = False):
-        """
-        A field representing string data when length known in advance.
-
-        **Parameters:**
-
-        * **name:** The name of the field.
-        * **default:** A default value for the field.
-        * **length:** The length of the field.
-        * **decode:** keyword-only boolean parameter to know if this field represents raw bytes or utf-8 text.
-        Defaults to `False` meaning it is bytes which is considered by default.
-        """
         if not isinstance(default, (str, bytes)):
             raise TypeError(f'default must be a string or bytes but you provided {default}')
 
