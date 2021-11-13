@@ -216,12 +216,12 @@ class VariableStringField(Field):
     * **order:** Order used to format raw data using the [struct](https://docs.python.org/3/library/struct.html) module.
     Defaults to `"!"` (network). Valid values are `"!"`, `"<"` (little-endian), `">"` (big-endian), `"@"` (native),
     `"="` (standard).
-    * **is_bytes:** keyword-only boolean parameter to know if this field represents raw bytes or utf-8 text.
-    Defaults to `False` meaning it is text which is considered by default.
+    * **decode:** keyword-only boolean parameter to know if this field represents raw bytes or utf-8 text.
+    Defaults to `False` meaning it is bytes which is considered by default.
     """
     _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
-    # is_bytes must come before default, look at default "default" factory method to see the relation.
-    _is_bytes: bool = attr.ib(default=False, kw_only=True, validator=attr.validators.instance_of(bool))
+    # decode must come before default, look at default "default" factory method to see the relation.
+    _decode: bool = attr.ib(default=False, kw_only=True, validator=attr.validators.instance_of(bool))
     _default: AnyStr = attr.ib(validator=attr.validators.instance_of((str, bytes)))
     _max_length: Optional[int] = attr.ib(
         default=None, validator=attr.validators.optional(attr.validators.instance_of(int))
@@ -233,17 +233,17 @@ class VariableStringField(Field):
         if self._max_length is not None and len(self._default) > self._max_length:
             raise ValueError(f'default must be less or equal than maximum length ({self._max_length})')
 
-        if isinstance(self._default, str) and self._is_bytes:
-            raise TypeError('default must be a string')
-
-        if isinstance(self._default, bytes) and not self._is_bytes:
+        if isinstance(self._default, str) and not self._decode:
             raise TypeError('default must be bytes')
+
+        if isinstance(self._default, bytes) and self._decode:
+            raise TypeError('default must be a string')
 
         self._value = self._default
 
     @_default.default
     def _get_default_value(self) -> AnyStr:
-        return b'kifurushi' if self._is_bytes else 'kifurushi'
+        return 'kifurushi' if self._decode else b'kifurushi'
 
     @property
     def name(self) -> str:
@@ -270,10 +270,10 @@ class VariableStringField(Field):
         if not isinstance(value, (str, bytes)):
             raise TypeError(f'{self._name} value must be bytes or string but you provided {value}')
 
-        if isinstance(value, str) and self._is_bytes:
+        if isinstance(value, str) and not self._decode:
             raise TypeError(f'{self._name} value must be bytes but you provided {value}')
 
-        if isinstance(value, bytes) and not self._is_bytes:
+        if isinstance(value, bytes) and self._decode:
             raise TypeError(f'{self._name} value must be a string but you provided {value}')
 
         if self._max_length is not None and len(value) > self._max_length:
@@ -290,9 +290,9 @@ class VariableStringField(Field):
         * **packet:** The optional packet currently parsing the raw `data` bytes. It can be useful
         when the computation of the field value depends on other fields.
         """
-        if self._is_bytes:
-            return self._value
-        return self._value.encode()
+        if self._decode:
+            return self._value.encode()
+        return self._value
 
     def __repr__(self):
         return (
@@ -330,4 +330,4 @@ class VariableStringField(Field):
         """
         length = self._max_length if self._max_length is not None else len(self._default)
         random_string = rand_string(length)
-        return random_string if not self._is_bytes else random_string.encode()
+        return random_string if self._decode else random_string.encode()

@@ -162,7 +162,7 @@ class TestPacketClass:
 
     @pytest.mark.parametrize(('field', 'value'), [
         (FixedStringField('game', 'pacman', 6), 'foobar'),
-        (CustomStringField('fruit', 'apple'), 'pineapple'),
+        (CustomStringField('fruit', 'apple', decode=True), 'pineapple'),
         (ShortField('length', 3), 10),
     ])
     def test_should_set_field_value_when_giving_correct_name_and_value(self, field, value):
