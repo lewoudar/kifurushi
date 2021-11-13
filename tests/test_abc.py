@@ -212,14 +212,23 @@ class TestVariableStringField:
 
     # noinspection PyTypeChecker
     @pytest.mark.parametrize(('default', 'decode'), [
-        (b'hello', True),
         (4.3, True),
-        ('hello', False),
         (4.3, False)
     ])
-    def test_should_raise_error_when_default_is_not_a_string(self, default, decode):
+    def test_should_raise_error_when_default_is_not_a_string_or_bytes(self, default, decode):
         with pytest.raises(TypeError):
             DummyStringField('foo', default, decode=decode)
+
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize(('default', 'decode', 'message'), [
+        (b'hello', True, 'default must be a string'),
+        ('hello', False, 'default must be bytes')
+    ])
+    def test_should_raise_error_when_default_does_not_have_the_correct_string_type(self, default, decode, message):
+        with pytest.raises(TypeError) as exc_info:
+            DummyStringField('foo', default, decode=decode)
+
+        assert str(exc_info.value) == message
 
     @pytest.mark.parametrize(('default', 'decode'), [
         (b'kifurushi', False),
@@ -279,7 +288,7 @@ class TestVariableStringField:
         ('banana', False, 'fruit value must be bytes but you provided banana'),
         (b'banana', True, "fruit value must be a string but you provided b'banana'")
     ])
-    def test_should_raise_error_when_giving_value_is_not_a_string(self, value, decode, message):
+    def test_should_raise_error_when_giving_value_is_not_string_or_bytes(self, value, decode, message):
         field = DummyStringField('fruit', decode=decode)
         with pytest.raises(TypeError) as exc_info:
             field.value = value

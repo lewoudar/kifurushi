@@ -4,7 +4,7 @@ import inspect
 import random
 import struct
 from copy import copy
-from typing import Dict, Any, Union, Optional, List, Tuple, Callable
+from typing import Dict, Any, Union, Optional, List, Tuple, Callable, TYPE_CHECKING, AnyStr
 
 import attr
 
@@ -14,6 +14,9 @@ from kifurushi.utils.random_values import (
     LEFT_LONG, RIGHT_LONG, LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG
 )
 from .abc import Field, CommonField, name_validator
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .packet import Packet
 
 
 def check_boundaries(left: int, right: int, value: int, message: str) -> None:
@@ -78,7 +81,7 @@ class NumericField(HexMixin, CommonField):
     _default: int = attr.ib(validator=[attr.validators.instance_of(int), numeric_validator])
     _value: int = attr.ib(init=False, validator=[attr.validators.instance_of(int), numeric_validator])
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
         self._value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
 
@@ -253,7 +256,7 @@ class SignedLongEnumField(SignedLongField, EnumMixin):
 
 class FixedStringField(CommonField):
 
-    def __init__(self, name: str, default: str, length: int):
+    def __init__(self, name: str, default: str, length: int, *, decode: bool = False):
         """
         A field representing string data when length known in advance.
 
@@ -262,33 +265,51 @@ class FixedStringField(CommonField):
         * **name:** The name of the field.
         * **default:** A default value for the field.
         * **length:** The length of the field.
+        * **decode:** keyword-only boolean parameter to know if this field represents raw bytes or utf-8 text.
+        Defaults to `False` meaning it is bytes which is considered by default.
         """
-        if not isinstance(default, str):
-            raise TypeError(f'default must be a string but you provided {default}')
+        if not isinstance(default, (str, bytes)):
+            raise TypeError(f'default must be a string or bytes but you provided {default}')
+
+        if not isinstance(decode, bool):
+            raise TypeError(f'decode must be a boolean but you provided {decode}')
 
         if not isinstance(length, int) or length <= 0:
             raise TypeError(f'length must be a positive integer but you provided {length}')
+
+        if isinstance(default, str) and not decode:
+            raise TypeError('default must be bytes')
+
+        if isinstance(default, bytes) and decode:
+            raise TypeError('default must be a string')
 
         if len(default) != length:
             raise ValueError('default length is different from the one given as third argument')
 
         self._length = length
+        self._decode = decode
         super().__init__(name, default, format=f'{length}s')
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
         value: bytes = self._struct.unpack(data[:self._size])[0]
-        self._value = value.decode()
+        self._value = value.decode() if self._decode else value
         return data[self._size:]
 
     @property
-    def value(self) -> str:
+    def value(self) -> AnyStr:
         """Returns internal string."""
         return self._value
 
     @value.setter
-    def value(self, value: str) -> None:
+    def value(self, value: AnyStr) -> None:
         """Sets internal string."""
-        if not isinstance(value, str):
+        if not isinstance(value, (str, bytes)):
+            raise TypeError(f'{self._name} value must be a string or bytes but you provided {value}')
+
+        if isinstance(value, str) and not self._decode:
+            raise TypeError(f'{self._name} value must be bytes but you provided {value}')
+
+        if isinstance(value, bytes) and self._decode:
             raise TypeError(f'{self._name} value must be a string but you provided {value}')
 
         if len(value) != self._length:
@@ -296,9 +317,16 @@ class FixedStringField(CommonField):
 
         self._value = value
 
-    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+    def raw(self, packet: 'Packet' = None) -> bytes:
         """Returns bytes encoded value of the internal string."""
-        return self._value.encode()
+        if self._decode:
+            return self._value.encode()
+        return self._value
+
+    def random_value(self) -> AnyStr:
+        """Returns a random string."""
+        random_string = super().random_value()
+        return random_string if self._decode else random_string.encode()
 
 
 @attr.s(slots=True, repr=False)
@@ -534,7 +562,7 @@ class BitsField(HexMixin, Field):
                 field_part.value = int(str_value, base=2)
                 bin_value = bin_value[field_part.size:]
 
-    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+    def raw(self, packet: 'Packet' = None) -> bytes:
         return self._struct.pack(self.value)
 
     def random_value(self) -> int:
@@ -543,7 +571,7 @@ class BitsField(HexMixin, Field):
         # more about the error here: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
         return random.randint(0, 2 ** (self._size * 8) - 1)  # nosec
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
         """Sets internal value of each field part and returns remaining bytes if any."""
         self.value = self._struct.unpack(data[:self._size])[0]
         return data[self._size:]
@@ -610,7 +638,7 @@ class LongBitsField(BitsField):
 @attr.s(slots=True, repr=False)
 class ConditionalField(Field):
     _field: Field = attr.ib(validator=attr.validators.instance_of(Field))
-    _condition: Callable[['Packet'], bool] = attr.ib(validator=attr.validators.is_callable())  # noqa: F821
+    _condition: Callable[['Packet'], bool] = attr.ib(validator=attr.validators.is_callable())
 
     def __attrs_post_init__(self):
         signature = inspect.signature(self._condition)
@@ -642,7 +670,7 @@ class ConditionalField(Field):
         return self._field.struct_format
 
     @property
-    def condition(self) -> Callable[['Packet'], bool]:  # noqa: F821
+    def condition(self) -> Callable[['Packet'], bool]:
         return self._condition
 
     def random_value(self) -> Union[int, str]:
@@ -653,7 +681,7 @@ class ConditionalField(Field):
         cloned_field._field = self._field.clone()
         return cloned_field
 
-    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+    def raw(self, packet: 'Packet' = None) -> bytes:
         """
         Returns the representation of field value in bytes as it will be sent on the network.
 
@@ -666,7 +694,7 @@ class ConditionalField(Field):
             return self._field.raw(packet)
         return b''
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:  # noqa: F821
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
         """
         Optionally computes the field value from the raw bytes and returns remaining bytes to parse
         from `data` if any. The `self._condition` callback is used to determine if you need to treat

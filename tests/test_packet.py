@@ -145,7 +145,7 @@ class TestPacketClass:
         assert custom_ip.foo == 'bar'
 
     @pytest.mark.parametrize(('field', 'value', 'error'), [
-        (FixedStringField('game', 'pacman', 6), 'super mario bros', ValueError),
+        (FixedStringField('game', 'pacman', 6, decode=True), 'super mario bros', ValueError),
         (ShortEnumField('identification', 1, Identification), 'youkoulele', ValueError),
         (ShortField('length', 3), 4.5, TypeError),
         (ShortBitsField([FieldPart('flags', 0b010, 3, Flags), FieldPart('offset', 0, 13)]), 'foo', ValueError),
@@ -161,7 +161,7 @@ class TestPacketClass:
             assert f'{name} has no value represented by {value}' == str(exc_info.value)
 
     @pytest.mark.parametrize(('field', 'value'), [
-        (FixedStringField('game', 'pacman', 6), 'foobar'),
+        (FixedStringField('game', 'pacman', 6, decode=True), 'foobar'),
         (CustomStringField('fruit', 'apple', decode=True), 'pineapple'),
         (ShortField('length', 3), 10),
     ])

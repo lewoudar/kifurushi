@@ -258,64 +258,123 @@ class TestFixedStringField:
     """Tests class FixedStringField"""
 
     # noinspection PyTypeChecker
-    @pytest.mark.parametrize('value', [b'hello', 4])
-    def test_should_raise_error_when_default_attribute_is_not_a_string(self, value):
+    @pytest.mark.parametrize('value', [4.5, 4])
+    def test_should_raise_error_when_default_attribute_is_not_a_string_or_bytes(self, value):
         with pytest.raises(TypeError) as exc_info:
             FixedStringField('foo', value, 8)
 
-        assert f'default must be a string but you provided {value}' == str(exc_info.value)
+        assert f'default must be a string or bytes but you provided {value}' == str(exc_info.value)
 
-    @pytest.mark.parametrize('value', [4.5, '4', -1])
-    def test_should_raise_error_when_length_attribute_is_not_a_positive_integer(self, value):
+    # noinspection PyTypeChecker
+    @pytest.mark.parametrize('decode', ['foo', 2])
+    def test_should_raise_error_when_decode_is_not_a_boolean(self, decode):
         with pytest.raises(TypeError) as exc_info:
-            FixedStringField('foo', 'hello', value)
+            FixedStringField('foo', 'blah', 4, decode=decode)
+
+        assert f'decode must be a boolean but you provided {decode}' == str(exc_info.value)
+
+    @pytest.mark.parametrize(('default', 'decode', 'message'), [
+        ('foo', False, 'default must be bytes'),
+        (b'foo', True, 'default must be a string')
+    ])
+    def test_should_raise_error_when_default_does_not_have_the_correct_string_type(self, default, decode, message):
+        with pytest.raises(TypeError) as exc_info:
+            FixedStringField('foo', default, 3, decode=decode)
+
+        assert str(exc_info.value) == message
+
+    @pytest.mark.parametrize(('default', 'decode'), [
+        ('hello', True),
+        (b'hello', False)
+    ])
+    @pytest.mark.parametrize('value', [4.5, '4', -1])
+    def test_should_raise_error_when_length_attribute_is_not_a_positive_integer(self, value, default, decode):
+        with pytest.raises(TypeError) as exc_info:
+            FixedStringField('foo', default, value, decode=decode)
 
         assert f'length must be a positive integer but you provided {value}' == str(exc_info.value)
 
-    @pytest.mark.parametrize('value', ['b' * 10, 'b' * 6])
-    def test_should_raise_error_if_default_length_is_different_than_specified_length(self, value):
+    @pytest.mark.parametrize(('value', 'decode'), [
+        ('b' * 10, True),
+        ('b' * 6, True),
+        (b'b' * 10, False),
+        (b'b' * 6, False)
+    ])
+    def test_should_raise_error_if_default_length_is_different_than_specified_length(self, value, decode):
         with pytest.raises(ValueError) as exc_info:
-            FixedStringField('foo', value, 8)
+            FixedStringField('foo', value, 8, decode=decode)
 
         assert 'default length is different from the one given as third argument' == str(exc_info.value)
 
-    def test_should_correctly_instantiate_field(self):
-        field = FixedStringField('foo', 'h' * 8, 8)
+    @pytest.mark.parametrize(('default', 'decode'), [
+        ('h' * 8, True),
+        (b'h' * 8, False)
+    ])
+    def test_should_correctly_instantiate_field(self, default, decode):
+        field = FixedStringField('foo', default, 8, decode=decode)
 
         assert 'foo' == field.name
-        assert 'h' * 8 == field.default == field.value
+        assert default == field.default == field.value
         assert 8 == field.size
         assert '!8s' == field.struct_format
 
     # test of raw method
 
-    def test_raw_property_returns_correct_value(self):
-        value = 'h' * 8
-        field = FixedStringField('foo', value, 8)
+    @pytest.mark.parametrize(('default', 'decode'), [
+        ('h' * 8, True),
+        (b'h' * 8, False)
+    ])
+    def test_raw_property_returns_correct_value(self, default, decode):
+        field = FixedStringField('foo', default, 8, decode=decode)
 
-        assert value.encode() == field.raw()
+        assert b'h' * 8 == field.raw()
 
     # test of value property
 
-    @pytest.mark.parametrize('value', [b'hello', 4])
-    def test_should_raise_error_when_setting_value_with_another_one_which_is_not_a_string(self, value):
-        field = FixedStringField('foo', 'h' * 8, 8)
+    @pytest.mark.parametrize(('default', 'value', 'decode'), [
+        ('h' * 8, 4, True),
+        (b'h' * 8, 4, False)
+    ])
+    def test_should_raise_error_when_giving_value_is_not_string_or_bytes(self, default, value, decode):
+        field = FixedStringField('foo', default, 8, decode=decode)
         with pytest.raises(TypeError) as exc_info:
             field.value = value
 
-        assert f'{field.name} value must be a string but you provided {value}' == str(exc_info.value)
+        assert f'{field.name} value must be a string or bytes but you provided {value}' == str(exc_info.value)
 
-    @pytest.mark.parametrize('value', ['b' * 10, 'b' * 6])
-    def test_should_raise_error_when_giving_value_is_greater_than_length_authorized(self, value):
-        field = FixedStringField('foo', 'h' * 8, 8)
+    @pytest.mark.parametrize(('default', 'value', 'decode', 'message'), [
+        ('h' * 8, b'b' * 8, True, f'foo value must be a string but you provided {b"b" * 8}'),
+        (b'h' * 8, 'b' * 8, False, f'foo value must be bytes but you provided {"b" * 8}')
+    ])
+    def test_should_raise_error_when_giving_value_does_not_have_correct_string_type(
+            self, default, value, decode, message
+    ):
+        field = FixedStringField('foo', default, 8, decode=decode)
+
+        with pytest.raises(TypeError) as exc_info:
+            field.value = value
+
+        assert str(exc_info.value) == message
+
+    @pytest.mark.parametrize(('default', 'value', 'decode'), [
+        ('h' * 8, 'b' * 10, True),
+        ('h' * 8, 'b' * 6, True),
+        (b'h' * 8, b'b' * 10, False),
+        (b'h' * 8, b'b' * 6, False),
+    ])
+    def test_should_raise_error_when_giving_value_is_greater_than_length_authorized(self, default, value, decode):
+        field = FixedStringField('foo', default, 8, decode=decode)
         with pytest.raises(ValueError) as exc_info:
             field.value = value
 
         assert f'the length of {field.name} value must be equal to {field._length}' == str(exc_info.value)
 
-    def test_should_not_raise_error_when_setting_value_with_a_correct_one(self):
-        field = FixedStringField('foo', 'h' * 8, 8)
-        value = 'b' * 8
+    @pytest.mark.parametrize(('default', 'value', 'decode'), [
+        ('h' * 8, 'b' * 8, True),
+        (b'h' * 8, b'b' * 8, False)
+    ])
+    def test_should_not_raise_error_when_setting_value_with_a_correct_one(self, default, value, decode):
+        field = FixedStringField('foo', default, 8, decode=decode)
         try:
             field.value = value
         except (ValueError, TypeError):
@@ -323,13 +382,31 @@ class TestFixedStringField:
 
     # test of compute_value method
 
-    def test_should_correctly_compute_string_and_return_remaining_bytes(self):
-        field = FixedStringField('foo', 'h' * 8, 8)
+    @pytest.mark.parametrize(('default', 'value', 'decode'), [
+        ('h' * 8, 'b' * 8, True),
+        (b'h' * 8, b'b' * 8, False)
+    ])
+    def test_should_correctly_compute_string_and_return_remaining_bytes(self, default, value, decode):
+        field = FixedStringField('foo', default, 8, decode=decode)
         data = struct.pack('!8sB', b'b' * 8, 2)
         remaining_bytes = field.compute_value(data)
 
         assert remaining_bytes == struct.pack('!B', 2)
-        assert 'b' * 8 == field.value
+        assert value == field.value
+
+    # test of random_value method
+
+    @pytest.mark.parametrize(('arguments', 'string_class'), [
+        ({'default': 'h' * 8, 'decode': True}, str),
+        ({'default': b'h' * 8, 'decode': False}, bytes),
+        ({'default': b'h' * 8}, bytes)
+    ])
+    def test_should_return_correct_random_string_when_calling_random_value(self, arguments, string_class):
+        field = FixedStringField('foo', length=8, **arguments)
+        random_value = field.random_value()
+
+        assert isinstance(random_value, string_class)
+        assert 8 == len(random_value)
 
 
 # noinspection PyTypeChecker

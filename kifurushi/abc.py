@@ -323,9 +323,9 @@ class VariableStringField(Field):
         from the packet.
         """
 
-    def random_value(self) -> str:
+    def random_value(self) -> AnyStr:
         """
-        Returns a random string. The length of the string is either the max length if given or the length
+        Returns a random string or bytes. The length of the string is either the max length if given or the length
         of the default attribute.
         """
         length = self._max_length if self._max_length is not None else len(self._default)
