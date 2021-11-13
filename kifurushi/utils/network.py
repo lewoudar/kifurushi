@@ -6,7 +6,6 @@ from typing import Union
 
 # == hexdump ==
 
-
 def smart_ord(value: Union[int, bytes]) -> int:
     if isinstance(value, int):
         return value
@@ -60,7 +59,7 @@ def check_endian_transform(value: int) -> int:
     return ((value >> 8) & 0xff) | value << 8
 
 
-def checksum(data: bytes) -> int:  # noqa: F821
+def checksum(data: bytes) -> int:
     """
     Returns the checksum of the given data.
 
