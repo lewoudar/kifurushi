@@ -210,7 +210,7 @@ from kifurushi import Packet, VariableStringField, ByteField, ShortField
 class DataField(VariableStringField):
     def compute_value(self, data: bytes, packet: Packet = None) -> Optional[bytes]:
         self._value = data[:packet.length].decode()
-        return data[packet.rdlength:]
+        return data[packet.length:]
 
 
 class Dummy(Packet):
