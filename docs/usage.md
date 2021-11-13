@@ -228,9 +228,10 @@ Notes:
   we use the `length` field to know the exact length of `data`. We can therefore extract the value and return the
   remaining bytes. This is important because it will allow the _packet_ to process other fields if any.
 - `VariableStringField` has a parameter `decode` which helps it to know the nature of the data we are manipulating. It
-  will then perform some checks when setting the value, getting a random value, etc... Since we set `decode` to
-  `True` in the previous example, we had to call the `decode` method when computing the value from raw data to have an
-  internal value which is a string.
+  will then perform some checks when setting the value, getting a random value, etc... This parameter defaults
+  to `False`
+  meaning that the internal value is considered to be `bytes`. Since we set `decode` to `True` in the previous example,
+  we had to call the `decode` method when computing the value from raw data to have an internal value which is a string.
 
 ## Customize a packet class
 
