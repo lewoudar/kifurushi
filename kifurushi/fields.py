@@ -267,7 +267,7 @@ class FixedStringField(CommonField):
     Defaults to `False` meaning it is bytes which is considered by default.
     """
 
-    def __init__(self, name: str, default: str, length: int, *, decode: bool = False):
+    def __init__(self, name: str, default: AnyStr, length: int, *, decode: bool = False):
         if not isinstance(default, (str, bytes)):
             raise TypeError(f'default must be a string or bytes but you provided {default}')
 
