@@ -4,6 +4,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2021-11-14
+
+## Changed
+
+- Type annotation of FixedStringField `default` parameter. It is now `AnyStr` instead of `str`.
+
 ## [0.3.0] - 2021-11-14
 
 ## Added
