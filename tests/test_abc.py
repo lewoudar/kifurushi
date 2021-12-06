@@ -7,51 +7,56 @@ from kifurushi.abc import Field, CommonField, VariableStringField
 from kifurushi.utils import random_values
 
 
+class FakeField(Field):
+    @property
+    def size(self) -> int:
+        return 0
+
+    @property
+    def default(self) -> Union[int, str]:
+        return 0
+
+    @property
+    def value(self) -> Union[int, str]:
+        return 0
+
+    @property
+    def struct_format(self) -> str:
+        return '!b'
+
+    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+        return b''
+
+    def random_value(self) -> Union[int, str]:
+        return 0
+
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
+        return b''
+
+    def __repr__(self):
+        return 'Field'
+
+
 class TestField:
     """Tests field class"""
 
     @pytest.mark.parametrize('attribute', [
         'size', 'default', 'value', 'raw', 'clone', 'struct_format',
-        'random_value', 'compute_value'
+        'random_value', 'compute_value', 'value_was_assigned'
     ])
     def test_should_check_field_class_defines_all_common_attributes_and_methods(self, attribute):
         assert getattr(Field, attribute, None) is not None
 
     def test_should_prove_field_has_a_default_clone_method_implementation(self):
-        class FakeField(Field):
-            @property
-            def size(self) -> int:
-                return 0
-
-            @property
-            def default(self) -> Union[int, str]:
-                return 0
-
-            @property
-            def value(self) -> Union[int, str]:
-                return 0
-
-            @property
-            def struct_format(self) -> str:
-                return '!b'
-
-            def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
-                return b''
-
-            def random_value(self) -> Union[int, str]:
-                return 0
-
-            def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:  # noqa: F821
-                return b''
-
-            def __repr__(self):
-                return 'Field'
-
         field = FakeField()
         cloned_field = field.clone()
 
         assert cloned_field == field
         assert cloned_field is not field
+
+    def test_should_check_property_value_was_assigned_defaults_to_false(self):
+        field = FakeField()
+        assert field.value_was_assigned is False
 
 
 @attr.s(repr=False)

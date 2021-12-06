@@ -19,6 +19,13 @@ if TYPE_CHECKING:  # pragma: no cover
 @attr.s(repr=False)
 class Field(ABC):
     """The abstract base class that **all** fields **must** inherit."""
+    # it helps to know if the intern value attribute has a default value or was assigned
+    # either by setting value property or by compute_value method
+    _value_was_assigned: bool = attr.ib(init=False, default=False)
+
+    @property
+    def value_was_assigned(self) -> bool:
+        return self._value_was_assigned
 
     @property
     @abstractmethod
