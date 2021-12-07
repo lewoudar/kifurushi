@@ -155,6 +155,17 @@ class Packet:
         """Returns tcpdump / wireshark like hexadecimal view of the packet."""
         return hexdump(self.raw)
 
+    @property
+    def all_fields_are_computed(self) -> bool:
+        """Returns True if all packet fields have been computed using from_bytes class method, False otherwise."""
+        for field in self._fields:
+            if not field.value_was_computed:
+                if isinstance(field, ConditionalField) and not field.condition(self):
+                    continue
+                else:
+                    return False
+        return True
+
     def __eq__(self, other: Any):
         if not isinstance(other, self.__class__):
             raise NotImplementedError

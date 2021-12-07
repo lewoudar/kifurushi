@@ -208,6 +208,27 @@ class TestPacketClass:
         fruit = Fruit(apples=apples, pie=pie, juice=juice)
         assert data == fruit.raw
 
+    # test of all_fields_are_computed property
+
+    def test_should_return_false_when_data_is_incomplete(self):
+        fruit = Fruit.from_bytes(b'\x00\x01')
+
+        assert fruit.all_fields_are_computed is False
+        assert fruit.apples == 1
+        for field in fruit.fields[1:]:
+            assert field.value_was_computed is False
+
+    def test_should_return_correct_true_when_data_is_complete(self):
+        fruit = Fruit.from_bytes(b'\x00\x01\x00\x01')
+
+        assert fruit.all_fields_are_computed is True
+        assert fruit.apples == 1
+        assert fruit.pie == 1
+        # pie field
+        assert fruit.fields[1].value_was_computed is True
+        # juice field
+        assert fruit.fields[-1].value_was_computed is False
+
     # test of __bytes__ method
 
     def test_should_return_byte_value_when_calling_bytes_builtin_function(self, custom_ip):
