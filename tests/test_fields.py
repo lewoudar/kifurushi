@@ -167,10 +167,22 @@ class TestNumericField:
     ])
     def test_should_correctly_compute_value_and_return_remaining_bytes(self, field_class, format_, value):
         field = field_class('foo', 2)
+        assert field.value_was_computed is False
+
         data = struct.pack(f'!{format_}5s', value, b'hello')
         remaining_data = field.compute_value(data)
+
         assert b'hello' == remaining_data
         assert value == field.value
+        assert field.value_was_computed is True
+
+    @pytest.mark.parametrize('field_class', [SignedIntField, LongField])
+    def test_should_return_empty_byte_when_not_enough_data_to_compute(self, field_class):
+        field = field_class('foo', 2)
+        remaining_data = field.compute_value(b'bb')
+
+        assert remaining_data == b''
+        assert field.value_was_computed is False
 
 
 class TestEnumToDict:
@@ -388,11 +400,25 @@ class TestFixedStringField:
     ])
     def test_should_correctly_compute_string_and_return_remaining_bytes(self, default, value, decode):
         field = FixedStringField('foo', default, 8, decode=decode)
+        assert field.value_was_computed is False
+
         data = struct.pack('!8sB', b'b' * 8, 2)
         remaining_bytes = field.compute_value(data)
 
         assert remaining_bytes == struct.pack('!B', 2)
         assert value == field.value
+        assert field.value_was_computed is True
+
+    @pytest.mark.parametrize(('default', 'decode'), [
+        ('h' * 8, True),
+        (b'h' * 8, False)
+    ])
+    def test_should_return_empty_byte_when_not_enough_data_to_compute(self, default, decode):
+        field = FixedStringField('foo', default, 8, decode=decode)
+        remaining_bytes = field.compute_value(b'bbb')
+
+        assert remaining_bytes == b''
+        assert field.value_was_computed is False
 
     # test of random_value method
 
@@ -572,7 +598,7 @@ class TestBitsField:
     @staticmethod
     def get_int_from_tuple(size: int, value: Tuple[int, ...]) -> int:
         # if we have a tuple (5, 6), their binary representation is (101, 110)
-        # so if each item must fill a size of 4 bits, we need to add extra leading 0 before concatenating the values
+        # so if each item must fill a size with 4 bits, we need to add extra leading 0 before concatenating the values
         str_value = ''
         for item in value:
             bin_item = bin(item)[2:]
@@ -732,12 +758,26 @@ class TestBitsField:
     @size_format_parametrize
     def test_should_compute_internal_field_part_value_when_calling_compute_value_method(self, size, format_):
         field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        assert field.value_was_computed is False
+
         value = (8, 11)
         data = struct.pack(f'!{format_}5s', self.get_int_from_tuple(size, value), b'hello')
         remaining_data = field.compute_value(data)
 
-        assert b'hello' == remaining_data
-        assert (8, 11) == field.value_as_tuple
+        assert remaining_data == b'hello'
+        assert field.value_as_tuple == (8, 11)
+        assert field.value_was_computed is True
+
+    @pytest.mark.parametrize(('size', 'format_'), [
+        (16, 'I'),
+        (32, 'Q')
+    ])
+    def test_should_return_empty_byte_when_not_enough_data_to_compute(self, size, format_):
+        field = BitsField(parts=[FieldPart('version', 4, size), FieldPart('IHL', 5, size)], format=format_)
+        remaining_bytes = field.compute_value(b'bbb')
+
+        assert remaining_bytes == b''
+        assert field.value_was_computed is False
 
     # test of __getitem__ method
 
@@ -839,7 +879,7 @@ class TestConditionalField:
             return x + y
 
         with pytest.raises(TypeError) as exc_info:
-            ConditionalField(ShortField('foo', 2), condition)
+            ConditionalField(ShortField('foo', 2), condition)  # type: ignore
 
         message = f'callable {condition.__name__} must takes one parameter (a packet instance) but yours has 2'
         assert message == str(exc_info.value)
@@ -874,21 +914,25 @@ class TestConditionalField:
         packet.apples = value
         field = ConditionalField(ShortField('foo', 2), lambda pkt: pkt.apples in [0, 2])
 
-        assert expected_data == field.raw(packet)
+        assert expected_data == field.raw(packet)  # type: ignore
 
     # test of compute_value method
 
-    @pytest.mark.parametrize(('apples', 'expected_data', 'value'), [
-        (2, b'hello', 4),
-        (1, b'\x00\x04hello', 2)
+    @pytest.mark.parametrize(('apples', 'expected_data', 'value', 'value_was_computed'), [
+        (2, b'hello', 4, True),
+        (1, b'\x00\x04hello', 2, False)
     ])
-    def test_should_correctly_compute_field_value_when_calling_compute_value_method(self, apples, expected_data, value):
+    def test_should_correctly_compute_field_value_when_calling_compute_value_method(
+            self, apples, expected_data, value, value_was_computed
+    ):
         packet = DummyPacket()
         packet.apples = apples
         field = ConditionalField(ShortField('foo', 2), lambda pkt: pkt.apples in [0, 2])
 
-        assert expected_data == field.compute_value(b'\x00\x04hello', packet)
+        assert field.value_was_computed is False
+        assert expected_data == field.compute_value(b'\x00\x04hello', packet)  # type: ignore
         assert value == field.value
+        assert field.value_was_computed is value_was_computed
 
     # test of clone method
 
