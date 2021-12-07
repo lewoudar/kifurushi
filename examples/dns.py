@@ -69,9 +69,14 @@ class IPField(Field):
         else:
             return f'fe80::{random.randint(1, 8)}'
 
-    def compute_value(self, data: bytes, packet: Packet = None) -> Optional[bytes]:
+    def compute_value(self, data: bytes, packet: Packet = None) -> bytes:
         cursor = 4 if self._address.version == 4 else 16
+        # if we don't have enough data to parse, we stop here
+        if len(data) < cursor:
+            return b''
         self._address = ipaddress.ip_address(data[:cursor])
+        # important to know if this field was parsed correctly
+        self._value_was_computed = True
         return data[cursor:]
 
     def __repr__(self):
@@ -210,6 +215,7 @@ class DomainNameField(Field):
         if self._pointer_value:
             index += 2
 
+        self._value_was_computed = True
         return data[index:]
 
     def random_value(self) -> str:
@@ -223,7 +229,10 @@ class DomainNameField(Field):
 class TxtField(VariableStringField):
 
     def compute_value(self, data: bytes, packet: Packet = None) -> Optional[bytes]:
+        if len(data) < packet.rdlength:
+            return b''
         self._value = data[:packet.rdlength].decode()
+        self._value_was_computed = True
         return data[packet.rdlength:]
 
 
