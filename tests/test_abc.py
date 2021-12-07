@@ -42,7 +42,7 @@ class TestField:
 
     @pytest.mark.parametrize('attribute', [
         'size', 'default', 'value', 'raw', 'clone', 'struct_format',
-        'random_value', 'compute_value', 'value_was_assigned'
+        'random_value', 'compute_value', 'value_was_computed'
     ])
     def test_should_check_field_class_defines_all_common_attributes_and_methods(self, attribute):
         assert getattr(Field, attribute, None) is not None
@@ -54,9 +54,9 @@ class TestField:
         assert cloned_field == field
         assert cloned_field is not field
 
-    def test_should_check_property_value_was_assigned_defaults_to_false(self):
+    def test_should_check_property_value_was_computed_defaults_to_false(self):
         field = FakeField()
-        assert field.value_was_assigned is False
+        assert field.value_was_computed is False
 
 
 @attr.s(repr=False)
