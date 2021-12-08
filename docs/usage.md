@@ -27,8 +27,8 @@ class Disney(Packet):
 You create a new protocol by inheriting the [Packet](api.md#packet) class. In this example, we have 3 fields:
 
 * A two-bytes integer field called *mickey* whose default value is 2.
-* A one byte integer field called *minnie* whose default value is 3. You notice the `hex` keyword set to true. It is to
-  tell that we prefer the hexadecimal representation when displaying this field information. We will see above an
+* A one byte integer field called *minnie* whose default value is 3. You will notice the `hex` keyword set to true. It
+  is to tell that we prefer the hexadecimal representation when displaying this field information. We will see above an
   example.
 * The last field is a four-byte field. It is slightly different from the first two (notice the *Enum* in the class name)
   . It takes a third **mandatory** argument which is an enum, or a dict mapping values to a literal representation
@@ -103,7 +103,7 @@ classic style to implement your class.
 ```python
 import ipaddress
 import random
-from typing import Union, Optional
+from typing import Union
 
 import attr
 from kifurushi import Field, Packet
@@ -132,7 +132,7 @@ class IPField(Field):
 
     @property
     def size(self) -> int:
-        # the size is in bytes
+        # the size is in number of bytes
         return 4 if self._address.version == 4 else 16
 
     @property
@@ -167,11 +167,21 @@ class IPField(Field):
         else:
             return f'fe80::{random.randint(1, 8)}'
 
-    def compute_value(self, data: bytes, packet: Packet = None) -> Optional[bytes]:
+    def compute_value(self, data: bytes, packet: Packet = None) -> bytes:
         # data represent the remaining bytes to parse by the packet instance passed as second argument
         # packet can be useful in some circumstances where field value depends on previous fields already parsed
+        
+        # if we don't have enough data to process, we stop there and return an empty byte so that following
+        # fields (if any) will not be processed too
+        if len(data) < self.size:
+            return b''
+    
         self._address = ipaddress.ip_address(data[:self.size])
-        # it is important to return the remaining bytes after those representing this field so that other fields
+        
+        # this is important to know if the field has been parsed correctly
+        self._value_was_computed = True
+        
+        # it is also important to return the remaining bytes after those representing this field so that other fields
         # can also process their value
         return data[self.size:]
 
@@ -191,9 +201,8 @@ Notes:
 * The code should be simple to understand, just about the `compute_field` method, this is what is called for every field
   of a packet when the `Packet.from_bytes` method is used. The first argument is the remaining bytes to parse from input
   data, and the second argument is the packet currently processing the data. This second argument is useful when the
-  value of the current field depends on fields already parsed. We can then retrieved them via the packet object. It is
-  also important to return remaining bytes after removing those corresponding to the field. This way, other fields will
-  also be able to process their value.
+  value of the current field depends on fields already parsed. We can then retrieve them via the packet object. For the
+  rest, the comments should help you understand what is happening.
 
 ## Implement a variable field
 
@@ -203,13 +212,18 @@ this kind of issue. Let's imagine we have a protocol `Dummy` with three fields: 
 latter depends on the second to get its value. This is how we can implement _data_ field.
 
 ```python
-from typing import Optional
 from kifurushi import Packet, VariableStringField, ByteField, ShortField
 
 
 class DataField(VariableStringField):
-    def compute_value(self, data: bytes, packet: Packet = None) -> Optional[bytes]:
+    def compute_value(self, data: bytes, packet: Packet = None) -> bytes:
+        # if we don't have enough data to process the field, we stop here
+        if len(data) < packet.length:
+            return b''
+        
         self._value = data[:packet.length].decode()
+        # important to know that the field has been parsed
+        self._value_was_computed = True
         return data[packet.length:]
 
 
@@ -329,6 +343,65 @@ raw bytes to send on the wire.
     [ConditionalField](api.md#conditionalfield) which comes in handy when the presence of a field in a packet depends on
     other fields.
 
+## Parsing data from the network
+
+We often have to receive data from _socket_ apis. However, those receive apis don't guarantee to have all the data we
+want to parse a protocol in one go. If we receive less than what we expected, we need a way to know from the packet
+that we did not parse every field. This is where the property `all_fields_are_computed` comes in. It allows us to
+know if all fields were parsed or not. We will consider the following Dummy packet for our example.
+
+```python
+from kifurushi import Packet, ShortField, ConditionalField
+
+class Dummy(Packet):
+    __fields__ = [
+        ShortField('a', 2),
+        # b will exist if a value is less than 100
+        ConditionalField(ShortField('b', 2), lambda p: p.a < 100),
+        ShortField('d', 1)
+    ]
+```
+
+!!! warning
+    The packet property `all_fields_are_computed` is only relevant when you call class method `from_bytes` to construct
+    the packet from bytes coming from other sources like the network.
+
+If we get from the network only the `a` field, this field will have the property `value_was_computed` set to `True` and
+for the other fields it will be `False`. If you look closely at the definition of `compute_value` method on the previous
+classes implemented above, you will notice that we set an attribute `_value_was_computed` when we parsed the field, this
+is why it is important!
+
+```python
+# just imagine a hypothetical library to parse network data, it can be the standard
+# socket library or an asynchronous one like trio / anyio
+data = socket.recv()  # we assume here that received data is b'\x00\x04'
+packet = Dummy.from_bytes(data)
+print(packet.all_fields_are_computed)  # False
+
+# the first field is "a"
+print(packet.fields[0].value_was_computed)  # True
+print(packet.a)  # 4
+
+for field in packet.fields[1:]:
+    print(field.value_was_computed)  # False
+```
+
+So if we want to read all the data necessary to get the packet information, we can write a loop like the following:
+
+```python
+buffer = bytearray()
+buffer += socket.recv()
+packet = Dummy.from_bytes(buffer)
+
+while not packet.all_fields_are_computed:
+    buffer += socket.recv()
+    packet = Dummy.from_bytes(buffer)
+
+# we can remove what we read from buffer to reuse it if necessary
+to_remove = len(buffer) - len(packet.raw)
+del buffer[:to_remove]
+```
+
 ## Miscellaneous
 
 ### Network helpers
@@ -362,7 +435,7 @@ For example, let's consider again the `IPv4` protocol we implemented earlier. If
 the wire: `socket.sendto(ICMP(type=8).raw + IPv4().raw, address)`.
 
 Now if you want to receive the ICMP response from the wire, what will you do? `ICMP.from_bytes(data)` ? This will not
-work because you send **ICMP** + **IPv4** data over the wire and you will receive also the two data structures from the
+work because you send **ICMP** + **IPv4** data over the wire, and you will receive also the two data structures from the
 wire. So to get these layers, you can write a code like the following
 
 ```python
