@@ -14,11 +14,7 @@ jobs:
       max-parallel: 6
       matrix:
         os: [ 'ubuntu-latest', 'macos-latest' ,'windows-latest' ]
-        python: [ pypy3, 3.6, 3.7, 3.8, 3.9, '3.10' ]
-        # it seems that the "new" macOS latest used does not play well with pypy, so we will disable it for now
-        exclude:
-          - os: macos-latest
-            python: pypy3
+        python: [ pypy3.7, 3.6, 3.7, 3.8, 3.9, '3.10' ]
 
     steps:
       - uses: actions/checkout@v2
