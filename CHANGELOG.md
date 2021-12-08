@@ -4,6 +4,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2021-12-08
+
+## Added
+
+- property `value_was_computed` on `Field` class so that all fields inherit it.
+- added property `all_fields_are_computed` on Packet class to know if a packet has been correctly parsed using
+  `from_bytes` class method.
+
+
 ## [0.3.1] - 2021-11-14
 
 ## Changed
@@ -15,8 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## Added
 
 - New boolean parameter `decode` to class `FixedStringField`. It defaults to `False` meaning the internal value is
-  considered as bytes, if `True`, it will be considered as a string. - (#4)
-- Support for python 3.10. - (#4)
+  considered as bytes, if `True`, it will be considered as a string.
+- Support for python 3.10.
 
 ## Changed
 

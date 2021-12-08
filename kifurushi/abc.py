@@ -19,6 +19,12 @@ if TYPE_CHECKING:  # pragma: no cover
 @attr.s(repr=False)
 class Field(ABC):
     """The abstract base class that **all** fields **must** inherit."""
+    # it helps to know if the intern value attribute has been computed by the method compute_value
+    _value_was_computed: bool = attr.ib(init=False, default=False)
+
+    @property
+    def value_was_computed(self) -> bool:
+        return self._value_was_computed
 
     @property
     @abstractmethod
@@ -65,7 +71,7 @@ class Field(ABC):
         return copy.copy(self)
 
     @abstractmethod
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         """
         Computes the field value from the raw bytes and returns remaining bytes to parse from `data` if any.
 
@@ -311,7 +317,7 @@ class VariableStringField(Field):
         return len(self._value)
 
     @abstractmethod
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         """
         Sets internal string value and returns remaining bytes from `data` if any.
 

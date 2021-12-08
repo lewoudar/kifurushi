@@ -1,5 +1,5 @@
 """
-This module provides a simple (non complete) implementation of NTPv4 header as described here:
+This module provides a simple (non-complete) implementation of NTPv4 header as described here:
 https://tools.ietf.org/html/rfc5905#page-19
 We don't take in account extensions in our implementation to make it simple.
 There is a client example retrieving clock information from a server. If you want to work with IPV6, replace

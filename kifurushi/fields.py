@@ -62,6 +62,18 @@ class HexMixin:
         """Returns hex property value."""
         return self._hex
 
+# Something important to note when implemented compute_value method of the different fields.
+# If we don't have enough data to parse, we must return an empty byte. There are two reasons:
+# 1. If we don't do it, the struct object will raise an error saying that it doesn't have enough data
+# to compute the value
+# 2. When parsing protocol data from the network we sometimes don't have enough data to interpret the
+# whole message, so when we return empty data when computing a field, we ensure that the property
+# "value_was_computed" remains to False. Also, if we return an empty byte the following packet fields to parse
+# will also not affect "value_was_computed" property. So the end user will just have to check this property on all
+# fields to know if the protocol was entirely parsed or not.
+# As a consequence of the second point, when a field is successfully parsed, the property "value_was_computed"
+# must be set to True.
+
 
 @attr.s(repr=False)
 class NumericField(HexMixin, CommonField):
@@ -81,8 +93,12 @@ class NumericField(HexMixin, CommonField):
     _default: int = attr.ib(validator=[attr.validators.instance_of(int), numeric_validator])
     _value: int = attr.ib(init=False, validator=[attr.validators.instance_of(int), numeric_validator])
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
+        if len(data) < self._size:
+            return b''
+
         self._value = self._struct.unpack(data[:self._size])[0]
+        self._value_was_computed = True
         return data[self._size:]
 
 
@@ -291,8 +307,12 @@ class FixedStringField(CommonField):
         super().__init__(name, default, format=f'{length}s')
 
     def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
+        if len(data) < self._size:
+            return b''
+
         value: bytes = self._struct.unpack(data[:self._size])[0]
         self._value = value.decode() if self._decode else value
+        self._value_was_computed = True
         return data[self._size:]
 
     @property
@@ -555,7 +575,7 @@ class BitsField(HexMixin, Field):
             if bin_value_length < size_in_bits:
                 bin_value = '0' * (size_in_bits - bin_value_length) + bin_value
 
-            # we fill the value of each field part and take care to update bin_value
+            # we fill the value with each field part and take care to update bin_value
             # to the rest of the string not parsed
             for field_part in self._parts:
                 str_value = bin_value[:field_part.size]
@@ -571,9 +591,13 @@ class BitsField(HexMixin, Field):
         # more about the error here: https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b311-random
         return random.randint(0, 2 ** (self._size * 8) - 1)  # nosec
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         """Sets internal value of each field part and returns remaining bytes if any."""
+        if len(data) < self._size:
+            return b''
+
         self.value = self._struct.unpack(data[:self._size])[0]
+        self._value_was_computed = True
         return data[self._size:]
 
     def __getitem__(self, name: str) -> FieldPart:
@@ -694,7 +718,7 @@ class ConditionalField(Field):
             return self._field.raw(packet)
         return b''
 
-    def compute_value(self, data: bytes, packet: 'Packet' = None) -> Optional[bytes]:
+    def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         """
         Optionally computes the field value from the raw bytes and returns remaining bytes to parse
         from `data` if any. The `self._condition` callback is used to determine if you need to treat
@@ -707,7 +731,9 @@ class ConditionalField(Field):
         when the value of the current field depends on other fields.
         """
         if self._condition(packet):
-            return self._field.compute_value(data, packet)
+            remaining_data = self._field.compute_value(data, packet)
+            self._value_was_computed = self._field.value_was_computed
+            return remaining_data
         return data
 
     def __getattr__(self, item):
