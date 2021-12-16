@@ -271,11 +271,11 @@ class TestFixedStringField:
 
     # noinspection PyTypeChecker
     @pytest.mark.parametrize('value', [4.5, 4])
-    def test_should_raise_error_when_default_attribute_is_not_a_string_or_bytes(self, value):
+    def test_should_raise_error_when_default_attribute_is_not_a_string_or_bytes_like(self, value):
         with pytest.raises(TypeError) as exc_info:
             FixedStringField('foo', value, 8)
 
-        assert f'default must be a string or bytes but you provided {value}' == str(exc_info.value)
+        assert f'default must be a string, bytes or bytearray but you provided {value}' == str(exc_info.value)
 
     # noinspection PyTypeChecker
     @pytest.mark.parametrize('decode', ['foo', 2])
@@ -286,8 +286,9 @@ class TestFixedStringField:
         assert f'decode must be a boolean but you provided {decode}' == str(exc_info.value)
 
     @pytest.mark.parametrize(('default', 'decode', 'message'), [
-        ('foo', False, 'default must be bytes'),
-        (b'foo', True, 'default must be a string')
+        ('foo', False, 'default must be bytes or bytearray'),
+        (b'foo', True, 'default must be a string'),
+        (bytearray(b'foo'), True, 'default must be a string')
     ])
     def test_should_raise_error_when_default_does_not_have_the_correct_string_type(self, default, decode, message):
         with pytest.raises(TypeError) as exc_info:
@@ -297,7 +298,8 @@ class TestFixedStringField:
 
     @pytest.mark.parametrize(('default', 'decode'), [
         ('hello', True),
-        (b'hello', False)
+        (b'hello', False),
+        (bytearray(b'hello'), False)
     ])
     @pytest.mark.parametrize('value', [4.5, '4', -1])
     def test_should_raise_error_when_length_attribute_is_not_a_positive_integer(self, value, default, decode):
@@ -310,7 +312,9 @@ class TestFixedStringField:
         ('b' * 10, True),
         ('b' * 6, True),
         (b'b' * 10, False),
-        (b'b' * 6, False)
+        (b'b' * 6, False),
+        (bytearray(b'b' * 10), False),
+        (bytearray(b'b' * 6), False)
     ])
     def test_should_raise_error_if_default_length_is_different_than_specified_length(self, value, decode):
         with pytest.raises(ValueError) as exc_info:
@@ -320,7 +324,8 @@ class TestFixedStringField:
 
     @pytest.mark.parametrize(('default', 'decode'), [
         ('h' * 8, True),
-        (b'h' * 8, False)
+        (b'h' * 8, False),
+        (bytearray(b'h' * 8), False)
     ])
     def test_should_correctly_instantiate_field(self, default, decode):
         field = FixedStringField('foo', default, 8, decode=decode)
@@ -334,7 +339,8 @@ class TestFixedStringField:
 
     @pytest.mark.parametrize(('default', 'decode'), [
         ('h' * 8, True),
-        (b'h' * 8, False)
+        (b'h' * 8, False),
+        (bytearray(b'h' * 8), False)
     ])
     def test_raw_property_returns_correct_value(self, default, decode):
         field = FixedStringField('foo', default, 8, decode=decode)
@@ -345,18 +351,21 @@ class TestFixedStringField:
 
     @pytest.mark.parametrize(('default', 'value', 'decode'), [
         ('h' * 8, 4, True),
-        (b'h' * 8, 4, False)
+        (b'h' * 8, 4, False),
+        (bytearray(b'h' * 8), 4, False)
     ])
-    def test_should_raise_error_when_giving_value_is_not_string_or_bytes(self, default, value, decode):
+    def test_should_raise_error_when_giving_value_is_not_string_or_bytes_like(self, default, value, decode):
         field = FixedStringField('foo', default, 8, decode=decode)
         with pytest.raises(TypeError) as exc_info:
             field.value = value
 
-        assert f'{field.name} value must be a string or bytes but you provided {value}' == str(exc_info.value)
+        given = str(exc_info.value)
+        assert f'{field.name} value must be a string, bytes or bytearray but you provided {value}' == given
 
     @pytest.mark.parametrize(('default', 'value', 'decode', 'message'), [
         ('h' * 8, b'b' * 8, True, f'foo value must be a string but you provided {b"b" * 8}'),
-        (b'h' * 8, 'b' * 8, False, f'foo value must be bytes but you provided {"b" * 8}')
+        (b'h' * 8, 'b' * 8, False, f'foo value must be bytes or bytearray but you provided {"b" * 8}'),
+        (bytearray(b'h' * 8), 'b' * 8, False, f'foo value must be bytes or bytearray but you provided {"b" * 8}')
     ])
     def test_should_raise_error_when_giving_value_does_not_have_correct_string_type(
             self, default, value, decode, message
@@ -373,6 +382,8 @@ class TestFixedStringField:
         ('h' * 8, 'b' * 6, True),
         (b'h' * 8, b'b' * 10, False),
         (b'h' * 8, b'b' * 6, False),
+        (bytearray(b'h' * 8), bytearray(b'b' * 10), False),
+        (bytearray(b'h' * 8), bytearray(b'b' * 6), False),
     ])
     def test_should_raise_error_when_giving_value_is_greater_than_length_authorized(self, default, value, decode):
         field = FixedStringField('foo', default, 8, decode=decode)
@@ -383,14 +394,14 @@ class TestFixedStringField:
 
     @pytest.mark.parametrize(('default', 'value', 'decode'), [
         ('h' * 8, 'b' * 8, True),
-        (b'h' * 8, b'b' * 8, False)
+        (b'h' * 8, b'b' * 8, False),
+        (bytearray(b'h' * 8), bytearray(b'b' * 8), False)
     ])
     def test_should_not_raise_error_when_setting_value_with_a_correct_one(self, default, value, decode):
         field = FixedStringField('foo', default, 8, decode=decode)
-        try:
-            field.value = value
-        except (ValueError, TypeError):
-            pytest.fail(f'unexpected error when setting value with {value}')
+        field.value = value
+
+        assert field.value == value
 
     # test of compute_value method
 

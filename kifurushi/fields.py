@@ -284,8 +284,8 @@ class FixedStringField(CommonField):
     """
 
     def __init__(self, name: str, default: AnyStr, length: int, *, decode: bool = False):
-        if not isinstance(default, (str, bytes)):
-            raise TypeError(f'default must be a string or bytes but you provided {default}')
+        if not isinstance(default, (str, bytes, bytearray)):
+            raise TypeError(f'default must be a string, bytes or bytearray but you provided {default}')
 
         if not isinstance(decode, bool):
             raise TypeError(f'decode must be a boolean but you provided {decode}')
@@ -294,9 +294,9 @@ class FixedStringField(CommonField):
             raise TypeError(f'length must be a positive integer but you provided {length}')
 
         if isinstance(default, str) and not decode:
-            raise TypeError('default must be bytes')
+            raise TypeError('default must be bytes or bytearray')
 
-        if isinstance(default, bytes) and decode:
+        if isinstance(default, (bytes, bytearray)) and decode:
             raise TypeError('default must be a string')
 
         if len(default) != length:
@@ -323,11 +323,11 @@ class FixedStringField(CommonField):
     @value.setter
     def value(self, value: AnyStr) -> None:
         """Sets internal string."""
-        if not isinstance(value, (str, bytes)):
-            raise TypeError(f'{self._name} value must be a string or bytes but you provided {value}')
+        if not isinstance(value, (str, bytes, bytearray)):
+            raise TypeError(f'{self._name} value must be a string, bytes or bytearray but you provided {value}')
 
         if isinstance(value, str) and not self._decode:
-            raise TypeError(f'{self._name} value must be bytes but you provided {value}')
+            raise TypeError(f'{self._name} value must be bytes or bytearray but you provided {value}')
 
         if isinstance(value, bytes) and self._decode:
             raise TypeError(f'{self._name} value must be a string but you provided {value}')
@@ -341,7 +341,7 @@ class FixedStringField(CommonField):
         """Returns bytes encoded value of the internal string."""
         if self._decode:
             return self._value.encode()
-        return self._value
+        return bytes(self._value)
 
     def random_value(self) -> AnyStr:
         """Returns a random string."""
