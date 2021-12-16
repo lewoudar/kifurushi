@@ -4,6 +4,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2021-21-16
+
+## Added
+
+- possibility to set `bytearray` value to `VariableStringField` and `FixedStringField` objects.
+
 ## [0.4.0] - 2021-12-08
 
 ## Added
