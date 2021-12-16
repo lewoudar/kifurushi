@@ -220,14 +220,15 @@ class TestVariableStringField:
         (4.3, True),
         (4.3, False)
     ])
-    def test_should_raise_error_when_default_is_not_a_string_or_bytes(self, default, decode):
+    def test_should_raise_error_when_default_is_not_a_string_or_bytes_like(self, default, decode):
         with pytest.raises(TypeError):
             DummyStringField('foo', default, decode=decode)
 
     # noinspection PyTypeChecker
     @pytest.mark.parametrize(('default', 'decode', 'message'), [
         (b'hello', True, 'default must be a string'),
-        ('hello', False, 'default must be bytes')
+        (bytearray(b'hello'), True, 'default must be a string'),
+        ('hello', False, 'default must be bytes or bytearray')
     ])
     def test_should_raise_error_when_default_does_not_have_the_correct_string_type(self, default, decode, message):
         with pytest.raises(TypeError) as exc_info:
@@ -275,7 +276,8 @@ class TestVariableStringField:
 
     @pytest.mark.parametrize(('default', 'decode'), [
         ('apple', True),
-        (b'apple', False)
+        (b'apple', False),
+        (bytearray(b'apple'), False)
     ])
     def test_should_returns_correct_representation_when_calling_repr_function(self, default, decode):
         field = DummyStringField('fruit', default, 50, decode=decode)
@@ -288,10 +290,11 @@ class TestVariableStringField:
     # test value setting
 
     @pytest.mark.parametrize(('value', 'decode', 'message'), [
-        (4, False, 'fruit value must be bytes or string but you provided 4'),
-        (4, True, 'fruit value must be bytes or string but you provided 4'),
-        ('banana', False, 'fruit value must be bytes but you provided banana'),
-        (b'banana', True, "fruit value must be a string but you provided b'banana'")
+        (4, False, 'fruit value must be bytes, bytearray or string but you provided 4'),
+        (4, True, 'fruit value must be bytes, bytearray or string but you provided 4'),
+        ('banana', False, 'fruit value must be bytes or bytearray but you provided banana'),
+        (b'banana', True, "fruit value must be a string but you provided b'banana'"),
+        (bytearray(b'banana'), True, "fruit value must be a string but you provided bytearray(b'banana')")
     ])
     def test_should_raise_error_when_giving_value_is_not_string_or_bytes(self, value, decode, message):
         field = DummyStringField('fruit', decode=decode)
@@ -313,7 +316,8 @@ class TestVariableStringField:
 
     @pytest.mark.parametrize(('value', 'decode'), [
         ('b' * 20, True),
-        (b'b' * 20, False)
+        (b'b' * 20, False),
+        (bytearray(b'b' * 20), False)
     ])
     def test_should_set_value_when_giving_correct_input(self, value, decode):
         field = DummyStringField('fruit', max_length=20, decode=decode)
@@ -326,7 +330,8 @@ class TestVariableStringField:
 
     @pytest.mark.parametrize(('value', 'decode'), [
         ('banana', True),
-        (b'banana', False)
+        (b'banana', False),
+        (bytearray(b'banana'), False)
     ])
     def test_raw_property_returns_correct_value(self, value, decode):
         field = DummyStringField('fruit', decode=decode)
@@ -338,7 +343,8 @@ class TestVariableStringField:
 
     @pytest.mark.parametrize(('default', 'value', 'decode'), [
         ('banana', 'apple', True),
-        (b'banana', b'apple', False)
+        (b'banana', b'apple', False),
+        (bytearray(b'banana'), bytearray(b'apple'), False)
     ])
     def test_struct_format_returns_correct_value(self, default, value, decode):
         field = DummyStringField('fruit', default, decode=decode)
@@ -351,7 +357,8 @@ class TestVariableStringField:
 
     @pytest.mark.parametrize(('default', 'value', 'decode'), [
         ('apple', 'banana', True),
-        (b'apple', b'banana', False)
+        (b'apple', b'banana', False),
+        (bytearray(b'apple'), bytearray(b'banana'), False)
     ])
     def test_size_property_returns_correct_value(self, default, value, decode):
         field = DummyStringField('fruit', default, decode=decode)
