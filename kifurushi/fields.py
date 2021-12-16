@@ -329,7 +329,7 @@ class FixedStringField(CommonField):
         if isinstance(value, str) and not self._decode:
             raise TypeError(f'{self._name} value must be bytes or bytearray but you provided {value}')
 
-        if isinstance(value, bytes) and self._decode:
+        if isinstance(value, (bytes, bytearray)) and self._decode:
             raise TypeError(f'{self._name} value must be a string but you provided {value}')
 
         if len(value) != self._length:

@@ -364,6 +364,7 @@ class TestFixedStringField:
 
     @pytest.mark.parametrize(('default', 'value', 'decode', 'message'), [
         ('h' * 8, b'b' * 8, True, f'foo value must be a string but you provided {b"b" * 8}'),
+        ('h' * 8, bytearray(b'b' * 8), True, f'foo value must be a string but you provided {bytearray(b"b" * 8)}'),
         (b'h' * 8, 'b' * 8, False, f'foo value must be bytes or bytearray but you provided {"b" * 8}'),
         (bytearray(b'h' * 8), 'b' * 8, False, f'foo value must be bytes or bytearray but you provided {"b" * 8}')
     ])
