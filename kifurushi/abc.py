@@ -216,7 +216,7 @@ class VariableStringField(Field):
     **Parameters:**
 
     * **name:** The name of the field.
-    * **default:** A default value for the field. Defaults to `kifurushi` or `b'kifurushi'` depending of the
+    * **default:** A default value for the field. Defaults to `kifurushi` or `b'kifurushi'` depending on the
     string type. See explanation of `is_bytes` parameter below.
     * **length:** An optional maximum length of the field.
     * **order:** Order used to format raw data using the [struct](https://docs.python.org/3/library/struct.html) module.
@@ -228,7 +228,7 @@ class VariableStringField(Field):
     _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     # decode must come before default, look at default "default" factory method to see the relation.
     _decode: bool = attr.ib(default=False, kw_only=True, validator=attr.validators.instance_of(bool))
-    _default: AnyStr = attr.ib(validator=attr.validators.instance_of((str, bytes)))
+    _default: AnyStr = attr.ib(validator=attr.validators.instance_of((str, bytes, bytearray)))
     _max_length: Optional[int] = attr.ib(
         default=None, validator=attr.validators.optional(attr.validators.instance_of(int))
     )
@@ -240,9 +240,9 @@ class VariableStringField(Field):
             raise ValueError(f'default must be less or equal than maximum length ({self._max_length})')
 
         if isinstance(self._default, str) and not self._decode:
-            raise TypeError('default must be bytes')
+            raise TypeError('default must be bytes or bytearray')
 
-        if isinstance(self._default, bytes) and self._decode:
+        if isinstance(self._default, (bytes, bytearray)) and self._decode:
             raise TypeError('default must be a string')
 
         self._value = self._default
@@ -273,13 +273,13 @@ class VariableStringField(Field):
 
     @value.setter
     def value(self, value: AnyStr) -> None:
-        if not isinstance(value, (str, bytes)):
-            raise TypeError(f'{self._name} value must be bytes or string but you provided {value}')
+        if not isinstance(value, (str, bytes, bytearray)):
+            raise TypeError(f'{self._name} value must be bytes, bytearray or string but you provided {value}')
 
         if isinstance(value, str) and not self._decode:
-            raise TypeError(f'{self._name} value must be bytes but you provided {value}')
+            raise TypeError(f'{self._name} value must be bytes or bytearray but you provided {value}')
 
-        if isinstance(value, bytes) and self._decode:
+        if isinstance(value, (bytes, bytearray)) and self._decode:
             raise TypeError(f'{self._name} value must be a string but you provided {value}')
 
         if self._max_length is not None and len(value) > self._max_length:
@@ -298,7 +298,7 @@ class VariableStringField(Field):
         """
         if self._decode:
             return self._value.encode()
-        return self._value
+        return bytes(self._value)
 
     def __repr__(self):
         return (
