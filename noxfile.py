@@ -5,7 +5,7 @@ import nox
 
 nox.options.reuse_existing_virtualenvs = True
 
-PYTHON_VERSIONS = ['pypy3', '3.6', '3.7', '3.8', '3.9', '3.10']
+PYTHON_VERSIONS = ['pypy3', '3.7', '3.8', '3.9', '3.10']
 CI_ENVIRONMENT = 'GITHUB_ACTIONS' in os.environ
 
 
@@ -13,7 +13,7 @@ CI_ENVIRONMENT = 'GITHUB_ACTIONS' in os.environ
 def lint(session):
     """Performs pep8 and security checks."""
     source_code = 'kifurushi'
-    session.install('flake8==3.8.4', 'bandit==1.7.0')
+    session.install('flake8==3.9.2', 'bandit==1.7.4')
     session.run('flake8', source_code)
     session.run('bandit', '-r', source_code)
 
@@ -24,10 +24,6 @@ def tests(session):
     session.install('poetry>=1.0.0,<2.0.0')
     session.run('poetry', 'install')
     session.run('pytest')
-
-    # we notify codecov when the latest version of python is used
-    if session.python == PYTHON_VERSIONS[-1] and CI_ENVIRONMENT:
-        session.run('codecov', '-f', 'coverage.xml')
 
 
 @nox.session(python=PYTHON_VERSIONS[-1])
