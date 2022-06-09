@@ -40,6 +40,10 @@ mkdocs = "^1.1.2"
 mkautodoc = "^0.1.0"
 mkdocs-material = "^7.0.3"
 nox = "^2022.1.7"
+pre-commit = "^2.19.0"
+isort = "^5.10.1"
+black = "^22.3.0"
+safety = "^1.10.3"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
