@@ -2,11 +2,12 @@
 import enum
 import inspect
 from copy import copy
-from typing import Iterable, Dict, Union, Any, Callable, List, Type
+from typing import Any, Callable, Dict, Iterable, List, Type, Union
 
 from kifurushi.utils.network import hexdump
-from .abc import Field, CommonField
-from .fields import BitsField, FieldPart, ConditionalField
+
+from .abc import CommonField, Field
+from .fields import BitsField, ConditionalField, FieldPart
 
 
 class Packet:
@@ -102,9 +103,7 @@ class Packet:
 
     @staticmethod
     def _set_enum_field(
-            field: Union[CommonField, FieldPart],
-            value: Union[int, str, enum.Enum],
-            set_attr: Callable[[str, Any], None]
+        field: Union[CommonField, FieldPart], value: Union[int, str, enum.Enum], set_attr: Callable[[str, Any], None]
     ) -> None:
         if isinstance(value, str):
             found = False
@@ -243,7 +242,7 @@ class Packet:
                         name=field_part.name.ljust(max_length),
                         type=f'{field_part.__class__.__name__} of {class_name}',
                         value=value,
-                        default=default
+                        default=default,
                     )
             else:
                 value = hex(field.value) if field.hex else field.value

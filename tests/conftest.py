@@ -1,8 +1,8 @@
 import pytest
 from scapy.compat import raw
-from scapy.fields import BitField, ShortField, ShortEnumField, FlagsField, ByteField
+from scapy.fields import BitField, ByteField, FlagsField, ShortEnumField, ShortField
 from scapy.packet import Packet
-from scapy.utils import hexdump, checksum
+from scapy.utils import checksum, hexdump
 
 from .helpers import MiniIP
 
@@ -36,7 +36,7 @@ def mini_body():
             ByteField('head', 1),
             ShortField('foot', 2),
             ShortField('teeth', 32),
-            ByteField('nose', 1)
+            ByteField('nose', 1),
         ]
 
     return ScapyMiniBody()

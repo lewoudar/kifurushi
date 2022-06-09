@@ -2,16 +2,19 @@ import pytest
 
 from kifurushi.utils import random_values
 
-random_parametrize = pytest.mark.parametrize(('func', 'left', 'right'), [
-    ('rand_bytes', 0, 2 ** 8 - 1),
-    ('rand_signed_bytes', -2 ** 7, 2 ** 7 - 1),
-    ('rand_short', 0, 2 ** 16 - 1),
-    ('rand_signed_short', -2 ** 15, 2 ** 15 - 1),
-    ('rand_int', 0, 2 ** 32 - 1),
-    ('rand_signed_int', -2 ** 31, 2 ** 31 - 1),
-    ('rand_long', 0, 2 ** 64 - 1),
-    ('rand_signed_long', -2 ** 63, 2 ** 63 - 1),
-])
+random_parametrize = pytest.mark.parametrize(
+    ('func', 'left', 'right'),
+    [
+        ('rand_bytes', 0, 2**8 - 1),
+        ('rand_signed_bytes', -(2**7), 2**7 - 1),
+        ('rand_short', 0, 2**16 - 1),
+        ('rand_signed_short', -(2**15), 2**15 - 1),
+        ('rand_int', 0, 2**32 - 1),
+        ('rand_signed_int', -(2**31), 2**31 - 1),
+        ('rand_long', 0, 2**64 - 1),
+        ('rand_signed_long', -(2**63), 2**63 - 1),
+    ],
+)
 
 
 @random_parametrize
@@ -45,8 +48,7 @@ class TestRandString:
         with pytest.raises(TypeError) as exc_info:
             random_values.rand_string(characters=value)
 
-        assert (f'characters must be a non empty string'
-                f' but you provided {value}') == str(exc_info.value)
+        assert (f'characters must be a non empty string' f' but you provided {value}') == str(exc_info.value)
 
     def test_should_compute_length_if_not_given(self, mocker):
         randint_mock = mocker.patch('random.randint', return_value=30)

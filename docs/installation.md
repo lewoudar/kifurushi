@@ -1,6 +1,6 @@
 # Installation
 
-To install kifurushi, you will need to have python and pip installed. For python, the minimal version supported is 
+To install kifurushi, you will need to have python and pip installed. For python, the minimal version supported is
 **3.6**. Note that the latest **pypy3** versions are also supported. After you can just enter the following command:
 
 ```bash

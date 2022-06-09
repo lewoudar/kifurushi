@@ -8,13 +8,21 @@ import random
 import socket
 import string
 import struct
-from typing import List, Optional, Dict, Any, Union
+from typing import Any, Dict, List, Optional, Union
 
 import attr
 
 from kifurushi import (
-    Packet, Field, ShortField, ShortEnumField, IntField, ConditionalField, VariableStringField, rand_string,
-    ShortBitsField, FieldPart
+    ConditionalField,
+    Field,
+    FieldPart,
+    IntField,
+    Packet,
+    ShortBitsField,
+    ShortEnumField,
+    ShortField,
+    VariableStringField,
+    rand_string,
 )
 
 
@@ -189,20 +197,20 @@ class DomainNameField(Field):
         while not end_of_data:
             length = data[index]
             if self._is_pointer(length):
-                self._pointer_value = struct.unpack(f'{self._format}H', data[index: index + 2])[0]
+                self._pointer_value = struct.unpack(f'{self._format}H', data[index : index + 2])[0]
                 pointer = self._get_pointer(self._pointer_value)
                 length = self._raw_packet[pointer]
                 # once we enter a pointer, we are sure that we can read labels to the end
                 while length:
                     pointer += 1
-                    label = self._raw_packet[pointer: pointer + length]
+                    label = self._raw_packet[pointer : pointer + length]
                     pointer_labels.append(label.decode())
                     pointer += length
                     length = self._raw_packet[pointer]
                 end_of_data = True
             else:
                 index += 1
-                label = data[index: index + length]
+                label = data[index : index + length]
                 labels.append(label.decode())
                 index += length
                 length = data[index]
@@ -227,13 +235,12 @@ class DomainNameField(Field):
 
 
 class TxtField(VariableStringField):
-
     def compute_value(self, data: bytes, packet: Packet = None) -> Optional[bytes]:
         if len(data) < packet.rdlength:
             return b''
-        self._value = data[:packet.rdlength].decode()
+        self._value = data[: packet.rdlength].decode()
         self._value_was_computed = True
-        return data[packet.rdlength:]
+        return data[packet.rdlength :]
 
 
 class DNSTypes(enum.Enum):
@@ -268,7 +275,7 @@ class ResourceRecord(Packet):
         ConditionalField(DomainNameField('kifurushi.io', 'ns'), lambda p: p.type == DNSTypes.NS.value),
         ConditionalField(DomainNameField('1.0.0.127.in-addr.arpa', 'ptr'), lambda p: p.type == DNSTypes.PTR.value),
         ConditionalField(TxtField('txt', 'kifurushi', decode=True), lambda p: p.type == DNSTypes.TXT.value),
-        ConditionalField(TxtField('spf', 'kifurushi', decode=True), lambda p: p.type == DNSTypes.SPF.value)
+        ConditionalField(TxtField('spf', 'kifurushi', decode=True), lambda p: p.type == DNSTypes.SPF.value),
     ]
 
     @classmethod
@@ -288,7 +295,7 @@ class Question(Packet):
     __fields__ = [
         DomainNameField('kifurushi.io', 'qname'),
         ShortEnumField('qtype', 1, DNSTypes),
-        ShortEnumField('qclass', 1, DNSClasses)
+        ShortEnumField('qclass', 1, DNSClasses),
     ]
 
     @classmethod
@@ -307,23 +314,25 @@ class Question(Packet):
 class DNS(Packet):
     __fields__ = [
         ShortField('id', 0),
-        ShortBitsField([
-            FieldPart('qr', 0, 1),
-            FieldPart('opcode', 0, 4),
-            FieldPart('aa', 0, 1),
-            FieldPart('tc', 0, 1),
-            FieldPart('rd', 0, 1),
-            FieldPart('ra', 0, 1),
-            FieldPart('z', 0, 1),
-            # AD and CD bits were defined in RFC 2535 and updated in RFC 4035
-            FieldPart('ac', 0, 1),
-            FieldPart('cd', 0, 1),
-            FieldPart('rcode', 0, 4)
-        ]),
+        ShortBitsField(
+            [
+                FieldPart('qr', 0, 1),
+                FieldPart('opcode', 0, 4),
+                FieldPart('aa', 0, 1),
+                FieldPart('tc', 0, 1),
+                FieldPart('rd', 0, 1),
+                FieldPart('ra', 0, 1),
+                FieldPart('z', 0, 1),
+                # AD and CD bits were defined in RFC 2535 and updated in RFC 4035
+                FieldPart('ac', 0, 1),
+                FieldPart('cd', 0, 1),
+                FieldPart('rcode', 0, 4),
+            ]
+        ),
         ShortField('qdcount', 0),
         ShortField('ancount', 0),
         ShortField('nscount', 0),
-        ShortField('arcount', 0)
+        ShortField('arcount', 0),
     ]
 
     def __init__(self, **kwargs):
@@ -385,7 +394,9 @@ class DNS(Packet):
 
         # answers
         for item, count in [
-            ('answers', 'ancount'), ('authority_answers', 'nscount'), ('additional_answers', 'arcount')
+            ('answers', 'ancount'),
+            ('authority_answers', 'nscount'),
+            ('additional_answers', 'arcount'),
         ]:
             answers = []
             for _ in range(getattr(packet, count)):

@@ -87,5 +87,5 @@ To see more protocol implementations check the folder [examples](examples) of th
   instantiating kifurushi fields. At the moment I'm writing this documentation, I'm using Pycharm 2020.3 and there is
   an [issue](https://youtrack.jetbrains.com/issue/PY-46298) when subclassing **attrs** classes. So just ignore the
   warning saying to fill the *format* parameter if you don't need it.
-* kifurushi is a young project, so it is expected to have breaking changes in the api without respecting the 
+* kifurushi is a young project, so it is expected to have breaking changes in the api without respecting the
   [semver](https://semver.org/) principle. It is recommended to pin the version you are using for now.

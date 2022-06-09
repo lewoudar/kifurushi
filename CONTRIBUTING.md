@@ -22,7 +22,7 @@ correct it. Look at [code contribution](#code-contribution) section before submi
 
 ## Submit feedback
 
-To submit feedback, use the [discussions](https://github.com/lewoudar/kifurushi/discussions) forum. 
+To submit feedback, use the [discussions](https://github.com/lewoudar/kifurushi/discussions) forum.
 Please **do not use the issue tracker**, I will just close it.
 
 If you want to propose a new feature:
@@ -44,7 +44,7 @@ single-quotes strings ('hello' instead of "hello") when presenting python code.
 Ready to contribute? Here is how to setup the project for local development.
 1. Fork the kifurushi repo on Github.
 
-2. Clone your fork locally. If you don't know how to proceed, 
+2. Clone your fork locally. If you don't know how to proceed,
    take a look at this [article](https://help.github.com/en/articles/fork-a-repo).
 
 3. Install the dependencies needed by the project. You must first install [poetry](https://python-poetry.org/docs/) on
@@ -64,7 +64,7 @@ Ready to contribute? Here is how to setup the project for local development.
     ```
 
 6. Commit your changes and push your branch to GitHub.
-    For the commit message, you should use the convention described 
+    For the commit message, you should use the convention described
     [here](https://medium.com/@menuka/writing-meaningful-git-commit-messages-a62756b65c81).
     It is the convention developed by the angular project. There is  just one notable difference I'm adding.
     The verb must be conjugated **in the past tense** because I believe we are talking about a done action and not an
@@ -75,5 +75,5 @@ Ready to contribute? Here is how to setup the project for local development.
 7. Before submitting the pull request, you should verify that you include tests. There is also a code coverage
    configured with the project. You can check the pull request status to know if your tests cover all the code you wrote.
    If your pull request add functionality, please update the documentation.
- 
+
 8. Submit your pull request through the GitHub website.

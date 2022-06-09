@@ -11,13 +11,13 @@ import struct
 import time
 from datetime import datetime, timedelta
 
-from kifurushi import Packet, ByteBitsField, FieldPart, ByteField, IntField, LongField, ConditionalField
+from kifurushi import ByteBitsField, ByteField, ConditionalField, FieldPart, IntField, LongField, Packet
 
 leap_indicator = {
     0: 'no warning',
     1: 'last minute of the day has 61 seconds',
     2: 'last minute of the day has 59 seconds',
-    3: 'unknown (clock unsynchronized)'
+    3: 'unknown (clock unsynchronized)',
 }
 
 modes = {
@@ -28,7 +28,7 @@ modes = {
     4: 'server',
     5: 'broadcast',
     6: 'NTP control message',
-    7: 'reserved for private use'
+    7: 'reserved for private use',
 }
 
 
@@ -42,7 +42,7 @@ def extract_datetime(transmit_timestamp: bytes) -> datetime:
     # leap seconds). To convert it to a datetime object, we do some simple
     # datetime arithmetic:
     base_time = datetime(1900, 1, 1)
-    offset = timedelta(seconds=seconds + fraction / 2 ** 32)
+    offset = timedelta(seconds=seconds + fraction / 2**32)
     return base_time + offset
 
 
@@ -64,7 +64,7 @@ class NTP(Packet):
         LongField('reference_timestamp', 0),
         LongField('origin_timestamp', 0),
         LongField('receive_timestamp', 0),
-        LongField('transmit_timestamp', 0)
+        LongField('transmit_timestamp', 0),
     ]
 
 

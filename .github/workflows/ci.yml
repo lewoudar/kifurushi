@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
@@ -14,7 +14,7 @@ jobs:
       max-parallel: 6
       matrix:
         os: [ 'ubuntu-latest', 'macos-latest' ,'windows-latest' ]
-        python: [ pypy-3.7, 3.6, 3.7, 3.8, 3.9, '3.10' ]
+        python: [ pypy-3.7, 3.7, 3.8, 3.9, '3.10' ]
 
     steps:
       - uses: actions/checkout@v2
@@ -30,8 +30,11 @@ jobs:
       - name: CPython tests
         run: nox -s tests-${{ matrix.python }}
         if: matrix.python != 'pypy-3.7'
-        env:
-          CODECOV_TOKEN: ${{ secrets.codecov_token }}
       - name: Pypy tests
         run: nox -s tests-pypy3
         if: matrix.python == 'pypy-3.7'
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        if: matrix.python == '3.10'
+        with:
+          files: ./coverage.xml
