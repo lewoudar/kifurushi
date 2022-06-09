@@ -1,16 +1,14 @@
 import pytest
 
-from kifurushi.utils.network import smart_ord, hexdump, check_endian_transform, checksum
+from kifurushi.utils.network import check_endian_transform, checksum, hexdump, smart_ord
+
 from ..helpers import MiniIP
 
 
 class TestSmartOrd:
     """Tests function smart_ord."""
 
-    @pytest.mark.parametrize(('argument', 'value'), [
-        (65, 65),
-        (b'A', 65)
-    ])
+    @pytest.mark.parametrize(('argument', 'value'), [(65, 65), (b'A', 65)])
     def test_should_return_correct_value_when_giving_correct_input(self, argument, value):
         assert value == smart_ord(argument)
 

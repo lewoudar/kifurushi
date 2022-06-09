@@ -3,13 +3,20 @@ import copy
 import string
 import struct
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Union, AnyStr, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, AnyStr, Optional, Union
 
 import attr
 
 from kifurushi.utils.random_values import (
-    rand_signed_bytes, rand_bytes, rand_signed_short, rand_short, rand_signed_int, rand_int, rand_signed_long,
-    rand_long, rand_string
+    rand_bytes,
+    rand_int,
+    rand_long,
+    rand_short,
+    rand_signed_bytes,
+    rand_signed_int,
+    rand_signed_long,
+    rand_signed_short,
+    rand_string,
 )
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -19,6 +26,7 @@ if TYPE_CHECKING:  # pragma: no cover
 @attr.s(repr=False)
 class Field(ABC):
     """The abstract base class that **all** fields **must** inherit."""
+
     # it helps to know if the intern value attribute has been computed by the method compute_value
     _value_was_computed: bool = attr.ib(init=False, default=False)
 
@@ -122,7 +130,7 @@ class CommonField(Field):
     _value: Any = attr.ib(init=False)
     _format: str = attr.ib(
         kw_only=True,
-        validator=[attr.validators.instance_of(str), attr.validators.matches_re(r'b|B|h|h|H|i|I|q|Q|\d+s')]
+        validator=[attr.validators.instance_of(str), attr.validators.matches_re(r'b|B|h|h|H|i|I|q|Q|\d+s')],
     )
     _size: int = attr.ib(init=False)
     _struct: struct.Struct = attr.ib(init=False)
@@ -225,6 +233,7 @@ class VariableStringField(Field):
     * **decode:** keyword-only boolean parameter to know if this field represents raw bytes or utf-8 text.
     Defaults to `False` meaning it is bytes which is considered by default.
     """
+
     _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     # decode must come before default, look at default "default" factory method to see the relation.
     _decode: bool = attr.ib(default=False, kw_only=True, validator=attr.validators.instance_of(bool))

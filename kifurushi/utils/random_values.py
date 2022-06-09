@@ -3,18 +3,18 @@ import random
 import string
 
 LEFT_BYTE = LEFT_SHORT = LEFT_INT = LEFT_LONG = 0
-RIGHT_BYTE = 2 ** 8 - 1
-RIGHT_SHORT = 2 ** 16 - 1
-RIGHT_INT = 2 ** 32 - 1
-RIGHT_LONG = 2 ** 64 - 1
-LEFT_SIGNED_BYTE = -2 ** 7
-LEFT_SIGNED_SHORT = -2 ** 15
-LEFT_SIGNED_INT = -2 ** 31
-LEFT_SIGNED_LONG = -2 ** 63
-RIGHT_SIGNED_BYTE = 2 ** 7 - 1
-RIGHT_SIGNED_SHORT = 2 ** 15 - 1
-RIGHT_SIGNED_INT = 2 ** 31 - 1
-RIGHT_SIGNED_LONG = 2 ** 63 - 1
+RIGHT_BYTE = 2**8 - 1
+RIGHT_SHORT = 2**16 - 1
+RIGHT_INT = 2**32 - 1
+RIGHT_LONG = 2**64 - 1
+LEFT_SIGNED_BYTE = -(2**7)
+LEFT_SIGNED_SHORT = -(2**15)
+LEFT_SIGNED_INT = -(2**31)
+LEFT_SIGNED_LONG = -(2**63)
+RIGHT_SIGNED_BYTE = 2**7 - 1
+RIGHT_SIGNED_SHORT = 2**15 - 1
+RIGHT_SIGNED_INT = 2**31 - 1
+RIGHT_SIGNED_LONG = 2**63 - 1
 
 # bandit raises B311 warnings because it thinks we use random module for security/cryptographic purposes
 # since it is not the case here, we can disable this error with confidence

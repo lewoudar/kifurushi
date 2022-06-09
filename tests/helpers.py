@@ -1,6 +1,6 @@
 import enum
 
-from kifurushi.fields import ByteBitsField, FieldPart, ShortField, ShortEnumField, ShortBitsField, ByteField
+from kifurushi.fields import ByteBitsField, ByteField, FieldPart, ShortBitsField, ShortEnumField, ShortField
 from kifurushi.packet import Packet
 
 
@@ -33,5 +33,5 @@ class MiniBody(Packet):
         ByteField('head', 1),
         ShortField('foot', 2),
         ShortField('teeth', 32),
-        ByteField('nose', 1)
+        ByteField('nose', 1),
     ]

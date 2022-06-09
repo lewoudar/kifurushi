@@ -58,17 +58,17 @@ b'\x00\x01\x03\x00\x00\x00\x02'
 Notes:
 
 * The first statement instantiates a `Disney` object with value `mickey` attribute set to 1.
-  
+
 * The second statement uses the `show` method to print a detailed state of the object. Each line represents an attribute
   with its **name**, its **type**, its **current value** and its **default value** between the parenthesis. Notice that
   *minnie* values are represented in hexadecimal thanks to the `hex` attribute set to `True` on field object.
-  
+
 * The next three statements set the `donald` attribute with value 2. As you can see, we can use the enumeration
   `Mood.cool`, its name or its value. kifurushi knows how to handle these cases.
-  
+
 * The penultimate statement is the `raw` property which computes the raw bytes from the protocol fields. This is useful
   when you want to send data over the network.
-  
+
 * The last statement shows how you can convert data received over the network to a protocol instance.
 
 You can also dynamically implement a protocol using the [create_packet_class](api.md#create_packet_class) helper
@@ -93,8 +93,8 @@ print(d)  # <Disney: mickey=1, minnie=0x3, donald=1>
 
 Sometimes, you will feel that the default [fields](api.md#fields) implemented by kifurushi are not enough for your use
 case. In this case you will need to implement a custom type by inheriting the [Field](api.md#field) class. Let's see an
-example with a field representing an IP value. Many protocols like 
-[ICMP](https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol) or 
+example with a field representing an IP value. Many protocols like
+[ICMP](https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol) or
 [DNS](https://en.wikipedia.org/wiki/Domain_Name_System) needs this type of field.
 I will use [attrs](https://www.attrs.org/en/stable/) to define the field class, but it is not an obligation, you can the
 classic style to implement your class.
@@ -151,7 +151,7 @@ class IPField(Field):
 
     @property
     def struct_format(self) -> str:
-        # not really useful here, but the idea is to use this value in combination with `struct.pack` 
+        # not really useful here, but the idea is to use this value in combination with `struct.pack`
         # or `struct.unpack` method to serialize or deserialize the field
         return '!I' if self._address.version == 4 else '!IIII'
 
@@ -170,17 +170,17 @@ class IPField(Field):
     def compute_value(self, data: bytes, packet: Packet = None) -> bytes:
         # data represent the remaining bytes to parse by the packet instance passed as second argument
         # packet can be useful in some circumstances where field value depends on previous fields already parsed
-        
+
         # if we don't have enough data to process, we stop there and return an empty byte so that following
         # fields (if any) will not be processed too
         if len(data) < self.size:
             return b''
-    
+
         self._address = ipaddress.ip_address(data[:self.size])
-        
+
         # this is important to know if the field has been parsed correctly
         self._value_was_computed = True
-        
+
         # it is also important to return the remaining bytes after those representing this field so that other fields
         # can also process their value
         return data[self.size:]
@@ -193,7 +193,7 @@ Notes:
 
 * The `Field` class defines an interface with common methods that all fields must implement and this is what is done in
   the previous example.
-  
+
 * The `name` attribute is important to define. It is used by the packet where the field will belong to set an attribute
   using the value of the `name` attribute. The reason why this attribute is not in the `Field` interface is the
   [BitsField](api.md#bitsfield) and its descendants. We will talk about this field later in the documentation.
@@ -220,7 +220,7 @@ class DataField(VariableStringField):
         # if we don't have enough data to process the field, we stop here
         if len(data) < packet.length:
             return b''
-        
+
         self._value = data[:packet.length].decode()
         # important to know that the field has been parsed
         self._value_was_computed = True
@@ -311,26 +311,26 @@ print(ip)
 Notes:
 
 * Here we have some usages of `BitsField` more specifically [ByteBitsField](api.md#bytebitsfield) and
-[ShortBitsField](api.md#shortbitsfield). These fields represent different information that cannot be contained in 
+[ShortBitsField](api.md#shortbitsfield). These fields represent different information that cannot be contained in
 multiples of bytes but rather part of a byte (or several bytes). It is the case for the first two information of an
 IPv4 packet, `version` and `ihl`, both hold in 4 bits. This is where `BitsField` class and its descendants come in
 handy. For the first two, they hold in a **byte**, this is why we use a `ByteBitsField`. For `flags` and `offset`
 information, they hold in **2 bytes**, so we use the `ShortBitsField`.
-  
+
 * These `BitsField` are composed of [FieldPart](api.md#fieldpart) objects taken a name representing an information, a
 default value and the size in **bits** the information takes. Notice that it is the field name which is used as an
 attribute for the IPv4 packet as shown in the previous example with `dscp`.
-  
+
 * We update slightly the default `Packet.__init__` method to take in account the `payload` information. It represents
 the upper data carried by the IPv4 packet. It may be
 [ICMP](https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol) or a combination
 [UDP](https://en.wikipedia.org/wiki/User_Datagram_Protocol) + [DNS](https://en.wikipedia.org/wiki/Domain_Name_System).
 This additional data will be used to compute the `checksum` field which depends on the current IPv4 fields and the
 payload.
-  
+
 * The `Packet.raw` method is overloaded to compute the `checksum` field if it is not already computed before returning
 raw bytes to send on the wire.
-  
+
 !!! warning
     Take care to the names given to the fields of a packet. There are some reserved names that cannot be used because
     they are attributes of the [Packet](api.md#packet) class like `raw`, `fields`, `compute_value`, `hexdump`,
@@ -338,8 +338,8 @@ raw bytes to send on the wire.
     methods.
 
 !!! note
-    Don't hesitate to look at the [examples](https://github.com/lewoudar/kifurushi/tree/main/examples) folder to see 
-    more examples of protocol implementations with kifurushi. You will see usage of the 
+    Don't hesitate to look at the [examples](https://github.com/lewoudar/kifurushi/tree/main/examples) folder to see
+    more examples of protocol implementations with kifurushi. You will see usage of the
     [ConditionalField](api.md#conditionalfield) which comes in handy when the presence of a field in a packet depends on
     other fields.
 
@@ -445,7 +445,7 @@ data, _ = socket.recvfrom(4096)
 icmp, ip = extract_layers(data, ICMP, IPv4)
 ```
 
-So, you pass to `extract_layers` the data and the list of layers (order is important) you expect to receive from 
+So, you pass to `extract_layers` the data and the list of layers (order is important) you expect to receive from
 the network. In response, you will get layer *instances* corresponding to the different classes passed to the
 function.
 

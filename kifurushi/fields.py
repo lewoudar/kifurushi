@@ -4,16 +4,30 @@ import inspect
 import random
 import struct
 from copy import copy
-from typing import Dict, Any, Union, Optional, List, Tuple, Callable, TYPE_CHECKING, AnyStr
+from typing import TYPE_CHECKING, Any, AnyStr, Callable, Dict, List, Optional, Tuple, Union
 
 import attr
 
 from kifurushi.utils.random_values import (
-    LEFT_BYTE, RIGHT_BYTE, LEFT_SIGNED_BYTE, RIGHT_SIGNED_BYTE, LEFT_SHORT, RIGHT_SHORT,
-    LEFT_SIGNED_SHORT, RIGHT_SIGNED_SHORT, LEFT_INT, RIGHT_INT, LEFT_SIGNED_INT, RIGHT_SIGNED_INT,
-    LEFT_LONG, RIGHT_LONG, LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG
+    LEFT_BYTE,
+    LEFT_INT,
+    LEFT_LONG,
+    LEFT_SHORT,
+    LEFT_SIGNED_BYTE,
+    LEFT_SIGNED_INT,
+    LEFT_SIGNED_LONG,
+    LEFT_SIGNED_SHORT,
+    RIGHT_BYTE,
+    RIGHT_INT,
+    RIGHT_LONG,
+    RIGHT_SHORT,
+    RIGHT_SIGNED_BYTE,
+    RIGHT_SIGNED_INT,
+    RIGHT_SIGNED_LONG,
+    RIGHT_SIGNED_SHORT,
 )
-from .abc import Field, CommonField, name_validator
+
+from .abc import CommonField, Field, name_validator
 
 if TYPE_CHECKING:  # pragma: no cover
     from .packet import Packet
@@ -36,13 +50,14 @@ def numeric_validator(field: CommonField, attribute: attr.Attribute, value: int)
         ('IntField', LEFT_INT, RIGHT_INT),
         ('SignedIntField', LEFT_SIGNED_INT, RIGHT_SIGNED_INT),
         ('LongField', LEFT_LONG, RIGHT_LONG),
-        ('SignedLongField', LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)
+        ('SignedLongField', LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG),
     ]:
         if class_name == name:
             check_boundaries(
-                left, right, value, message.format(
-                    name=field.name, attribute_name=attribute_name, left=left, right=right
-                )
+                left,
+                right,
+                value,
+                message.format(name=field.name, attribute_name=attribute_name, left=left, right=right),
             )
             break
 
@@ -50,6 +65,7 @@ def numeric_validator(field: CommonField, attribute: attr.Attribute, value: int)
 @attr.s(repr=False)
 class HexMixin:
     """Mixin class to get hexadecimal representation of field value."""
+
     _hex: bool = attr.ib(kw_only=True, default=False, validator=[attr.validators.instance_of(bool)])
 
     def __repr__(self):
@@ -61,6 +77,7 @@ class HexMixin:
     def hex(self) -> bool:
         """Returns hex property value."""
         return self._hex
+
 
 # Something important to note when implemented compute_value method of the different fields.
 # If we don't have enough data to parse, we must return an empty byte. There are two reasons:
@@ -97,9 +114,9 @@ class NumericField(HexMixin, CommonField):
         if len(data) < self._size:
             return b''
 
-        self._value = self._struct.unpack(data[:self._size])[0]
+        self._value = self._struct.unpack(data[: self._size])[0]
         self._value_was_computed = True
-        return data[self._size:]
+        return data[self._size:]  # fmt: skip
 
 
 def enum_to_dict(enumeration: enum.EnumMeta) -> Any:
@@ -121,7 +138,7 @@ def enum_key_validator(field: CommonField, _, enumeration: Dict[int, str]) -> No
             ('IntEnumField', LEFT_INT, RIGHT_INT),
             ('SignedIntEnumField', LEFT_SIGNED_INT, RIGHT_SIGNED_INT),
             ('LongEnumField', LEFT_LONG, RIGHT_LONG),
-            ('SignedLongEnumField', LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)
+            ('SignedLongEnumField', LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG),
         ]:
             if class_name == name:
                 check_boundaries(left, right, key, message.format(left=left, right=right))
@@ -130,14 +147,17 @@ def enum_key_validator(field: CommonField, _, enumeration: Dict[int, str]) -> No
 
 @attr.s
 class EnumMixin:
-    _enumeration: Union[enum.EnumMeta, Dict[int, str]] = attr.ib(converter=enum_to_dict, validator=[
-        attr.validators.deep_mapping(
-            key_validator=attr.validators.instance_of(int),
-            value_validator=attr.validators.instance_of(str),
-            mapping_validator=attr.validators.instance_of(dict)
-        ),
-        enum_key_validator
-    ])
+    _enumeration: Union[enum.EnumMeta, Dict[int, str]] = attr.ib(
+        converter=enum_to_dict,
+        validator=[
+            attr.validators.deep_mapping(
+                key_validator=attr.validators.instance_of(int),
+                value_validator=attr.validators.instance_of(str),
+                mapping_validator=attr.validators.instance_of(dict),
+            ),
+            enum_key_validator,
+        ],
+    )
 
     @property
     def enumeration(self) -> Dict[int, str]:
@@ -151,52 +171,61 @@ class EnumMixin:
 @attr.s(repr=False, slots=True)
 class ByteField(NumericField):
     """Field class to represent one unsigned byte of network information."""
+
     _format: str = attr.ib(init=False, default='B')
 
 
 @attr.s(repr=False, slots=True)
 class SignedByteField(NumericField):
     """Field class to represent one signed byte of network information."""
+
     _format: str = attr.ib(init=False, default='b')
 
 
 @attr.s(repr=False, slots=True)
 class ShortField(NumericField):
     """Field class to represent two unsigned bytes of network information."""
+
     _format: str = attr.ib(init=False, default='H')
 
 
 @attr.s(repr=False, slots=True)
 class SignedShortField(NumericField):
     """Field class to represent two signed bytes of network information."""
+
     _format: str = attr.ib(init=False, default='h')
 
 
 @attr.s(repr=False, slots=True)
 class IntField(NumericField):
     """Field class to represent four unsigned bytes of network information."""
+
     _format: str = attr.ib(init=False, default='I')
 
 
 @attr.s(repr=False, slots=True)
 class SignedIntField(NumericField):
     """Field class to represent four signed bytes of network information."""
+
     _format: str = attr.ib(init=False, default='i')
 
 
 @attr.s(repr=False, slots=True)
 class LongField(NumericField):
     """Field class to represent eight unsigned bytes of network information."""
+
     _format: str = attr.ib(init=False, default='Q')
 
 
 @attr.s(repr=False, slots=True)
 class SignedLongField(NumericField):
     """Field class to represent eight signed bytes of network information."""
+
     _format: str = attr.ib(init=False, default='q')
 
 
 # Enum Fields
+
 
 @attr.s(repr=False, slots=True)
 class ByteEnumField(ByteField, EnumMixin):
@@ -310,10 +339,10 @@ class FixedStringField(CommonField):
         if len(data) < self._size:
             return b''
 
-        value: bytes = self._struct.unpack(data[:self._size])[0]
+        value: bytes = self._struct.unpack(data[: self._size])[0]
         self._value = value.decode() if self._decode else value
         self._value_was_computed = True
-        return data[self._size:]
+        return data[self._size :]
 
     @property
     def value(self) -> AnyStr:
@@ -362,6 +391,7 @@ class FieldPart(HexMixin):
     * **enumeration:** A `dict` or `enum.Enum` enumeration given friendly name to a specific value. This
     attribute is optional.
     """
+
     _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     _default: int = attr.ib(validator=attr.validators.instance_of(int))
     _size: int = attr.ib(validator=attr.validators.instance_of(int))
@@ -370,16 +400,17 @@ class FieldPart(HexMixin):
     _enumeration: Optional[Union[enum.EnumMeta, Dict[int, str]]] = attr.ib(
         default=None,
         converter=enum_to_dict,
-        validator=attr.validators.optional(attr.validators.deep_mapping(
-            key_validator=attr.validators.instance_of(int),
-            value_validator=attr.validators.instance_of(str),
-            mapping_validator=attr.validators.instance_of(dict)
-        )
-        )
+        validator=attr.validators.optional(
+            attr.validators.deep_mapping(
+                key_validator=attr.validators.instance_of(int),
+                value_validator=attr.validators.instance_of(str),
+                mapping_validator=attr.validators.instance_of(dict),
+            )
+        ),
     )
 
     def __attrs_post_init__(self):
-        self._max_value = 2 ** self._size - 1
+        self._max_value = 2**self._size - 1
         if self._default < 0 or self._default > self._max_value:
             raise ValueError(f'default must be between 0 and {self._max_value} but you provided {self._default}')
 
@@ -461,9 +492,10 @@ class BitsField(HexMixin, Field):
     information, the `version` (4 bits) and the `IHL` (4bits). To represent it we can define a field like the following:
     `BitsField([FieldPart('version', 4, 4), FieldPart('IHL', 5, 4)], format='B')`
     """
-    _parts: List[FieldPart] = attr.ib(validator=attr.validators.deep_iterable(
-        member_validator=attr.validators.instance_of(FieldPart)
-    ))
+
+    _parts: List[FieldPart] = attr.ib(
+        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(FieldPart))
+    )
     _format: str = attr.ib(validator=attr.validators.in_(['B', 'H', 'I', 'Q']))
     _order: str = attr.ib(kw_only=True, default='!', validator=attr.validators.in_(['<', '>', '!', '@', '=']))
     _struct: struct.Struct = attr.ib(init=False)
@@ -556,7 +588,7 @@ class BitsField(HexMixin, Field):
                     raise ValueError('all items in tuple must be integers')
 
                 field_part = self._parts[index]
-                max_value = 2 ** field_part.size - 1
+                max_value = 2**field_part.size - 1
                 if not 0 <= item <= max_value:
                     raise ValueError(
                         f'item {field_part.name} must be between 0 and {max_value} according to the field part size'
@@ -578,9 +610,9 @@ class BitsField(HexMixin, Field):
             # we fill the value with each field part and take care to update bin_value
             # to the rest of the string not parsed
             for field_part in self._parts:
-                str_value = bin_value[:field_part.size]
+                str_value = bin_value[: field_part.size]
                 field_part.value = int(str_value, base=2)
-                bin_value = bin_value[field_part.size:]
+                bin_value = bin_value[field_part.size :]
 
     def raw(self, packet: 'Packet' = None) -> bytes:
         return self._struct.pack(self.value)
@@ -596,9 +628,9 @@ class BitsField(HexMixin, Field):
         if len(data) < self._size:
             return b''
 
-        self.value = self._struct.unpack(data[:self._size])[0]
+        self.value = self._struct.unpack(data[: self._size])[0]
         self._value_was_computed = True
-        return data[self._size:]
+        return data[self._size :]
 
     def __getitem__(self, name: str) -> FieldPart:
         """Returns FieldPart which name corresponds to the one passed as argument."""
@@ -638,24 +670,28 @@ class BitsField(HexMixin, Field):
 @attr.s(slots=True, repr=False)
 class ByteBitsField(BitsField):
     """A specialized BitsField class dealing with one unsigned byte field."""
+
     _format: str = attr.ib(default='B', init=False)
 
 
 @attr.s(slots=True, repr=False)
 class ShortBitsField(BitsField):
     """A specialized BitsField class dealing with a two unsigned bytes field."""
+
     _format: str = attr.ib(default='H', init=False)
 
 
 @attr.s(slots=True, repr=False)
 class IntBitsField(BitsField):
     """A specialized BitsField class dealing with a four unsigned bytes field."""
+
     _format: str = attr.ib(default='I', init=False)
 
 
 @attr.s(slots=True, repr=False)
 class LongBitsField(BitsField):
     """A specialized BitsField class dealing with an eight unsigned bytes field."""
+
     _format: str = attr.ib(default='Q', init=False)
 
 

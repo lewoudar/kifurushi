@@ -3,8 +3,8 @@ import array
 import struct
 from typing import Union
 
-
 # == hexdump ==
+
 
 def smart_ord(value: Union[int, bytes]) -> int:
     if isinstance(value, int):
@@ -43,7 +43,7 @@ def hexdump(data: bytes) -> str:
                 result += '%02X ' % smart_ord(data[i + j])
             else:
                 result += '   '
-        result += ' %s\n' % sane_value(data[i:i + 16])
+        result += ' %s\n' % sane_value(data[i : i + 16])
         i += 16
     # remove trailing \n
     result = result[:-1] if result.endswith('\n') else result
@@ -52,11 +52,12 @@ def hexdump(data: bytes) -> str:
 
 # == checksum ==
 
+
 def check_endian_transform(value: int) -> int:
     if struct.pack('H', 1) == b'\x00\x01':  # if native byte order is big endian
         return value
 
-    return ((value >> 8) & 0xff) | value << 8
+    return ((value >> 8) & 0xFF) | value << 8
 
 
 def checksum(data: bytes) -> int:
@@ -73,7 +74,7 @@ def checksum(data: bytes) -> int:
     if len(data) % 2 == 1:
         data += b'\0'
     s = sum(array.array('H', data))
-    s = (s >> 16) + (s & 0xffff)
+    s = (s >> 16) + (s & 0xFFFF)
     s += s >> 16
     s = ~s
-    return check_endian_transform(s) & 0xffff
+    return check_endian_transform(s) & 0xFFFF

@@ -2,17 +2,22 @@ from typing import List
 
 import pytest
 
-from kifurushi.abc import VariableStringField, Field
+from kifurushi.abc import Field, VariableStringField
 from kifurushi.fields import (
-    FieldPart, ByteBitsField, ShortField, ShortEnumField, ShortBitsField, FixedStringField, ConditionalField
+    ByteBitsField,
+    ConditionalField,
+    FieldPart,
+    FixedStringField,
+    ShortBitsField,
+    ShortEnumField,
+    ShortField,
 )
-from kifurushi.packet import create_packet_class, extract_layers, Packet
+from kifurushi.packet import Packet, create_packet_class, extract_layers
 from kifurushi.utils.random_values import RIGHT_SHORT
-from tests.helpers import Identification, Flags, MiniIP, MiniBody
+from tests.helpers import Flags, Identification, MiniBody, MiniIP
 
 
 class CustomStringField(VariableStringField):
-
     def compute_value(self, data: bytes, packet: 'Packet' = None) -> bytes:
         pass
 
@@ -48,13 +53,16 @@ class TestCreatePacketClass:
         assert 'the list of fields must not be empty' == str(exc_info.value)
 
     # noinspection PyTypeChecker,PyArgumentList
-    @pytest.mark.parametrize(('fields', 'message'), [
-        ('hello', f'each item in the list must be a Field object but you provided h'),
-        (
+    @pytest.mark.parametrize(
+        ('fields', 'message'),
+        [
+            ('hello', 'each item in the list must be a Field object but you provided h'),
+            (
                 [ShortField('length', 20), b'fast food'],
-                f'each item in the list must be a Field object but you provided {b"fast food"}'
-        )
-    ])
+                f'each item in the list must be a Field object but you provided {b"fast food"}',
+            ),
+        ],
+    )
     def test_should_raise_error_if_an_item_in_the_list_is_not_a_field_object(self, fields, message):
         with pytest.raises(TypeError) as exc_info:
             create_packet_class('MiniIP', fields)
@@ -72,7 +80,7 @@ class TestCreatePacketClass:
 class ErrorPacket1(Packet):
     __fields__ = [
         ShortField('hello', 2),
-        ByteBitsField([FieldPart('hello', 4, 4), FieldPart('foo', 4, 4)])  # hello field comes in double
+        ByteBitsField([FieldPart('hello', 4, 4), FieldPart('foo', 4, 4)]),  # hello field comes in double
     ]
 
 
@@ -82,7 +90,7 @@ class ErrorPacket2(Packet):
         ShortField('hello', 2),
         ShortField('potatoes', 3),
         ShortField('players', 2),
-        ShortField('hello', 3)  # hello field comes in double
+        ShortField('hello', 3),  # hello field comes in double
     ]
 
 
@@ -91,7 +99,7 @@ class Fruit(Packet):
     __fields__ = [
         ShortField('apples', 2),
         ConditionalField(ShortField('pie', 1), lambda p: p.apples <= 2),
-        ConditionalField(ShortField('juice', 1), lambda p: p.apples > 2)
+        ConditionalField(ShortField('juice', 1), lambda p: p.apples > 2),
     ]
 
 
@@ -125,10 +133,9 @@ class TestPacketClass:
         assert mini_ip.fields is not mini_ip.__fields__
         assert mini_ip.fields is not mini_ip._fields
 
-    @pytest.mark.parametrize(('arguments', 'version', 'offset'), [
-        ({'version': 5}, 5, 0),
-        ({'version': 5, 'offset': 12}, 5, 12)
-    ])
+    @pytest.mark.parametrize(
+        ('arguments', 'version', 'offset'), [({'version': 5}, 5, 0), ({'version': 5, 'offset': 12}, 5, 12)]
+    )
     def test_should_correctly_instantiate_packet_when_giving_correct_arguments(self, arguments, version, offset):
         mini_ip = MiniIP(**arguments)
         assert mini_ip.version == version
@@ -144,12 +151,15 @@ class TestPacketClass:
         custom_ip.foo = 'bar'
         assert custom_ip.foo == 'bar'
 
-    @pytest.mark.parametrize(('field', 'value', 'error'), [
-        (FixedStringField('game', 'pacman', 6, decode=True), 'super mario bros', ValueError),
-        (ShortEnumField('identification', 1, Identification), 'youkoulele', ValueError),
-        (ShortField('length', 3), 4.5, TypeError),
-        (ShortBitsField([FieldPart('flags', 0b010, 3, Flags), FieldPart('offset', 0, 13)]), 'foo', ValueError),
-    ])
+    @pytest.mark.parametrize(
+        ('field', 'value', 'error'),
+        [
+            (FixedStringField('game', 'pacman', 6, decode=True), 'super mario bros', ValueError),
+            (ShortEnumField('identification', 1, Identification), 'youkoulele', ValueError),
+            (ShortField('length', 3), 4.5, TypeError),
+            (ShortBitsField([FieldPart('flags', 0b010, 3, Flags), FieldPart('offset', 0, 13)]), 'foo', ValueError),
+        ],
+    )
     def test_should_raise_error_when_given_value_is_not_correct(self, field, value, error):
         custom_class = create_packet_class('Custom', [field])
         instance = custom_class()
@@ -160,33 +170,38 @@ class TestPacketClass:
         if name == 'identification':
             assert f'{name} has no value represented by {value}' == str(exc_info.value)
 
-    @pytest.mark.parametrize(('field', 'value'), [
-        (FixedStringField('game', 'pacman', 6, decode=True), 'foobar'),
-        (CustomStringField('fruit', 'apple', decode=True), 'pineapple'),
-        (ShortField('length', 3), 10),
-    ])
+    @pytest.mark.parametrize(
+        ('field', 'value'),
+        [
+            (FixedStringField('game', 'pacman', 6, decode=True), 'foobar'),
+            (CustomStringField('fruit', 'apple', decode=True), 'pineapple'),
+            (ShortField('length', 3), 10),
+        ],
+    )
     def test_should_set_field_value_when_giving_correct_name_and_value(self, field, value):
         custom_class = create_packet_class('Custom', [field])
         instance = custom_class()
         setattr(instance, field.name, value)
         assert getattr(instance, field.name) == value
 
-    @pytest.mark.parametrize(('field', 'given_value', 'expected_value'), [
-        (ShortEnumField('identification', 1, Identification), 3, 3),
-        (ShortEnumField('identification', 1, Identification), Identification.lion.name, Identification.lion.value),
-        (ShortEnumField('identification', 1, Identification), Identification.lion, Identification.lion.value)
-    ])
+    @pytest.mark.parametrize(
+        ('field', 'given_value', 'expected_value'),
+        [
+            (ShortEnumField('identification', 1, Identification), 3, 3),
+            (ShortEnumField('identification', 1, Identification), Identification.lion.name, Identification.lion.value),
+            (ShortEnumField('identification', 1, Identification), Identification.lion, Identification.lion.value),
+        ],
+    )
     def test_should_set_enum_field_value_when_giving_correct_name_and_value(self, field, given_value, expected_value):
         custom_class = create_packet_class('Custom', [field])
         instance = custom_class()
         setattr(instance, field.name, given_value)
         assert getattr(instance, field.name) == expected_value
 
-    @pytest.mark.parametrize(('given_value', 'expected_value'), [
-        (Flags.df.value, Flags.df.value),
-        (Flags.df.name, Flags.df.value),
-        (Flags.df, Flags.df.value)
-    ])
+    @pytest.mark.parametrize(
+        ('given_value', 'expected_value'),
+        [(Flags.df.value, Flags.df.value), (Flags.df.name, Flags.df.value), (Flags.df, Flags.df.value)],
+    )
     def test_should_set_bits_field_value_when_giving_correct_name_and_value(self, given_value, expected_value):
         fields = [ShortBitsField([FieldPart('flags', 0b010, 3, Flags), FieldPart('offset', 0, 13)])]
         bit_class = create_packet_class('Bits', fields)
@@ -200,10 +215,9 @@ class TestPacketClass:
     def test_should_correctly_compute_packet_byte_value_when_calling_raw_property(self, custom_ip, raw_mini_ip):
         assert raw_mini_ip == custom_ip.raw
 
-    @pytest.mark.parametrize(('apples', 'pie', 'juice', 'data'), [
-        (1, 1, 0, b'\x00\x01\x00\x01'),
-        (8, 0, 3, b'\x00\x08\x00\x03')
-    ])
+    @pytest.mark.parametrize(
+        ('apples', 'pie', 'juice', 'data'), [(1, 1, 0, b'\x00\x01\x00\x01'), (8, 0, 3, b'\x00\x08\x00\x03')]
+    )
     def test_should_compute_packet_byte_value_taking_in_account_conditional_fields(self, apples, pie, juice, data):
         fruit = Fruit(apples=apples, pie=pie, juice=juice)
         assert data == fruit.raw
@@ -246,11 +260,14 @@ class TestPacketClass:
         with pytest.raises(NotImplementedError):
             custom_ip.__eq__(value)
 
-    @pytest.mark.parametrize(('packet_1', 'packet_2', 'boolean'), [
-        (MiniIP(), MiniIP(), True),
-        (MiniIP(version=5), MiniIP(version=5), True),
-        (MiniIP(version=5), MiniIP(), False)
-    ])
+    @pytest.mark.parametrize(
+        ('packet_1', 'packet_2', 'boolean'),
+        [
+            (MiniIP(), MiniIP(), True),
+            (MiniIP(version=5), MiniIP(version=5), True),
+            (MiniIP(version=5), MiniIP(), False),
+        ],
+    )
     def test_should_correctly_compare_two_packets(self, packet_1, packet_2, boolean):
         result = packet_1 == packet_2
         assert result is boolean
@@ -262,11 +279,14 @@ class TestPacketClass:
         with pytest.raises(NotImplementedError):
             custom_ip.__ne__(value)
 
-    @pytest.mark.parametrize(('packet_1', 'packet_2', 'boolean'), [
-        (MiniIP(), MiniIP(), False),
-        (MiniIP(version=5), MiniIP(version=5), False),
-        (MiniIP(version=5), MiniIP(), True)
-    ])
+    @pytest.mark.parametrize(
+        ('packet_1', 'packet_2', 'boolean'),
+        [
+            (MiniIP(), MiniIP(), False),
+            (MiniIP(version=5), MiniIP(version=5), False),
+            (MiniIP(version=5), MiniIP(), True),
+        ],
+    )
     def test_should_correctly_compare_opposition_of_two_packets(self, packet_1, packet_2, boolean):
         result = packet_1 != packet_2
         assert result is boolean
@@ -292,10 +312,9 @@ class TestPacketClass:
         assert 5 == new_ip.version
         assert 18 == new_ip.length
 
-    @pytest.mark.parametrize(('apples', 'pie', 'juice', 'data'), [
-        (2, 2, 1, b'\x00\x02\x00\x02'),
-        (4, 1, 2, b'\x00\x04\x00\x02')
-    ])
+    @pytest.mark.parametrize(
+        ('apples', 'pie', 'juice', 'data'), [(2, 2, 1, b'\x00\x02\x00\x02'), (4, 1, 2, b'\x00\x04\x00\x02')]
+    )
     def test_should_create_packet_taking_in_account_conditional_field(self, apples, pie, juice, data):
         fruit = Fruit.from_bytes(data)
 
@@ -309,12 +328,12 @@ class TestPacketClass:
         mini_ip = MiniIP.random_packet()
 
         assert isinstance(mini_ip, MiniIP)
-        assert 0 <= mini_ip.version <= 2 ** 4 - 1
-        assert 0 <= mini_ip.ihl <= 2 ** 4 - 1
+        assert 0 <= mini_ip.version <= 2**4 - 1
+        assert 0 <= mini_ip.ihl <= 2**4 - 1
         assert 0 <= mini_ip.length <= RIGHT_SHORT
         assert 0 <= mini_ip.identification <= RIGHT_SHORT
-        assert 0 <= mini_ip.flags <= 2 ** 3 - 1
-        assert 0 <= mini_ip.offset <= 2 ** 13 - 1
+        assert 0 <= mini_ip.flags <= 2**3 - 1
+        assert 0 <= mini_ip.offset <= 2**13 - 1
 
     # test of evolve method
 
@@ -341,33 +360,26 @@ class TestPacketClass:
 
     # test of __repr__ method
 
-    @pytest.mark.parametrize(('value', 'hexadecimal'), [
-        (20, False),
-        ('0x14', True)
-    ])
+    @pytest.mark.parametrize(('value', 'hexadecimal'), [(20, False), ('0x14', True)])
     def test_should_return_correct_packet_representation_when_calling_repr_function(
-            self, custom_ip, value, hexadecimal
+        self, custom_ip, value, hexadecimal
     ):
         custom_ip._fields[1]._hex = hexadecimal
         representation = f'<MiniIP: version=4, ihl=5, length={value}, identification=1, flags=0x2, offset=0x0>'
         assert representation == repr(custom_ip)
 
-    @pytest.mark.parametrize(('apples', 'representation'), [
-        (2, '<Fruit: apples=2, pie=1>'),
-        (4, '<Fruit: apples=4, juice=1>')
-    ])
+    @pytest.mark.parametrize(
+        ('apples', 'representation'), [(2, '<Fruit: apples=2, pie=1>'), (4, '<Fruit: apples=4, juice=1>')]
+    )
     def test_should_represent_packet_taking_in_account_conditional_fields(self, apples, representation):
         fruit = Fruit(apples=apples)
         assert representation == repr(fruit)
 
     # test of show method
 
-    @pytest.mark.parametrize(('value_1', 'value_2', 'hexadecimal'), [
-        (18, 20, False),
-        ('0x12', '0x14', True)
-    ])
+    @pytest.mark.parametrize(('value_1', 'value_2', 'hexadecimal'), [(18, 20, False), ('0x12', '0x14', True)])
     def test_should_print_correct_packet_representation_when_calling_show_method(
-            self, capsys, custom_ip, value_1, value_2, hexadecimal
+        self, capsys, custom_ip, value_1, value_2, hexadecimal
     ):
         custom_ip._fields[1]._hex = hexadecimal
         custom_ip.length = 18
@@ -385,12 +397,15 @@ class TestPacketClass:
 
         assert captured.out == output
 
-    @pytest.mark.parametrize(('apples', 'representation'), [
-        (2, 'apples : ShortField = 2 (2)\npie    : ShortField = 1 (1)\n'),
-        (4, 'apples : ShortField = 4 (2)\njuice  : ShortField = 1 (1)\n')
-    ])
+    @pytest.mark.parametrize(
+        ('apples', 'representation'),
+        [
+            (2, 'apples : ShortField = 2 (2)\npie    : ShortField = 1 (1)\n'),
+            (4, 'apples : ShortField = 4 (2)\njuice  : ShortField = 1 (1)\n'),
+        ],
+    )
     def test_should_print_packet_representation_taking_in_account_conditional_field(
-            self, capsys, apples, representation
+        self, capsys, apples, representation
     ):
         fruit = Fruit(apples=apples)
         fruit.show()
