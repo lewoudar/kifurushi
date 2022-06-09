@@ -4,7 +4,7 @@
 ![](https://github.com/lewoudar/kifurushi/workflows/CI/badge.svg)
 [![Coverage Status](https://codecov.io/gh/lewoudar/kifurushi/branch/main/graphs/badge.svg?branch=main)](https://codecov.io/gh/lewoudar/kifurushi)
 [![Documentation Status](https://readthedocs.org/projects/kifurushi/badge/?version=latest)](https://kifurushi.readthedocs.io/en/latest/?badge=latest)
-[![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/wntrblm/nox)
+[![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/lewoudar/kifurushi)
 [![License Apache 2](https://img.shields.io/hexpm/l/plug.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
 A simple library to forge network packets.
