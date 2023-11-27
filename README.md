@@ -1,11 +1,12 @@
 # Kifurushi
 
 [![Pypi version](https://img.shields.io/pypi/v/kifurushi.svg)](https://pypi.org/project/kifurushi/)
-![](https://github.com/lewoudar/kifurushi/workflows/CI/badge.svg)
+[![](https://github.com/lewoudar/kifurushi/workflows/CI/badge.svg)](https://github.com/lewoudar/kifurushi/actions)
 [![Coverage Status](https://codecov.io/gh/lewoudar/kifurushi/branch/main/graphs/badge.svg?branch=main)](https://codecov.io/gh/lewoudar/kifurushi)
 [![Documentation Status](https://readthedocs.org/projects/kifurushi/badge/?version=latest)](https://kifurushi.readthedocs.io/en/latest/?badge=latest)
-[![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/lewoudar/kifurushi)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/lewoudar/ws)
 [![License Apache 2](https://img.shields.io/hexpm/l/plug.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://github.com/lewoudar/kifurushi)
 
 A simple library to forge network packets.
 

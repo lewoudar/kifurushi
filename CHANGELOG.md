@@ -1,12 +1,16 @@
 # Changelog
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.6.0] - 2023-11-27
+
+### Changed
+
+- Upgraded `attrs` library to version **23.1.0**.
 
 ### Removed
 
-- support for python3.6
+- support for python 3.6 and python 3.7.
 
 ## [0.5.0] - 2021-12-16
 
