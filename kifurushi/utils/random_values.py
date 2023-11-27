@@ -1,6 +1,8 @@
+# ruff: noqa: S311
 """Module which contains different random functions and constants useful when handling field values."""
 import random
 import string
+from typing import Optional
 
 LEFT_BYTE = LEFT_SHORT = LEFT_INT = LEFT_LONG = 0
 RIGHT_BYTE = 2**8 - 1
@@ -61,7 +63,7 @@ def rand_signed_long():
     return random.randint(LEFT_SIGNED_LONG, RIGHT_SIGNED_LONG)  # nosec
 
 
-def rand_string(length: int = None, characters: str = None) -> str:
+def rand_string(length: Optional[int] = None, characters: Optional[str] = None) -> str:
     """
     Returns a random string given.
 

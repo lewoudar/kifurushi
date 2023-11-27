@@ -69,7 +69,7 @@ class NTP(Packet):
 
 
 if __name__ == '__main__':
-    print("Our clock currently reads (in UTC):", datetime.utcnow())
+    print('Our clock currently reads (in UTC):', datetime.utcnow())
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         # we look up some ntp servers

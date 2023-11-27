@@ -60,7 +60,7 @@ class Field(ABC):
         """Returns the struct format used under the hood for computation of field value."""
 
     @abstractmethod
-    def raw(self, packet: 'Packet' = None) -> bytes:  # noqa: F821
+    def raw(self, packet: 'Packet' = None) -> bytes:
         """
         Returns the representation of field value in bytes as it will be sent on the network.
 
@@ -125,6 +125,7 @@ class CommonField(Field):
     * **order:** Order used to format raw data using the `struct` module. Defaults to `"!"` (network). Valid values are
     `"!"`, `"<"` (little-endian), `">"` (big-endian), `"@"` (native), `"="` (standard).
     """
+
     _name: str = attr.ib(validator=[attr.validators.instance_of(str), name_validator])
     _default: Any = attr.ib()
     _value: Any = attr.ib(init=False)

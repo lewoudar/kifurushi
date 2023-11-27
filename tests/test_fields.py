@@ -658,7 +658,8 @@ class TestBitsField:
     def test_should_raise_error_when_parts_size_is_not_correct(self, size_1, size_2):
         with pytest.raises(ValueError) as exc_info:
             BitsField(
-                parts=[FieldPart('version', 4, size_1), FieldPart('IHL', 5, size_2)], format='B'  # 1 byte (8 bits)
+                parts=[FieldPart('version', 4, size_1), FieldPart('IHL', 5, size_2)],
+                format='B',  # 1 byte (8 bits)
             )
         size = size_1 + size_2
         assert (f'the sum in bits of the different FieldPart ({size})' f' is different from the field size (8)') == str(

@@ -230,7 +230,8 @@ class Packet:
                 continue
 
             if isinstance(field, ConditionalField):
-                class_name = getattr(field, '_field').__class__.__name__
+                # noinspection PyProtectedMember
+                class_name = field._field.__class__.__name__
             else:
                 class_name = field.__class__.__name__
 

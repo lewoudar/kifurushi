@@ -1,3 +1,4 @@
+# ruff: noqa: S311
 """
 In this example we will implement a DNS packet according to RFC 1035.
 There is a client example to show how to use it in real cases.
@@ -30,8 +31,8 @@ def check_ip_address(_, _param, address: str) -> bool:
     try:
         ipaddress.ip_address(address)
         return True
-    except ipaddress.AddressValueError:
-        raise ValueError(f'{address} is not a valid ip address')
+    except ipaddress.AddressValueError as e:
+        raise ValueError(f'{address} is not a valid ip address') from e
 
 
 @attr.s(slots=True, repr=False)

@@ -1,3 +1,4 @@
+# ruff: noqa: S311, C901
 """This module contains field implementations."""
 import enum
 import inspect
@@ -107,6 +108,7 @@ class NumericField(HexMixin, CommonField):
     * **order:** Order used to format raw data using the `struct` module. Defaults to `"!"` (network). Valid values are
     `"!"`, `"<"` (little-endian), `">"` (big-endian), `"@"` (native), `"="` (standard).
     """
+
     _default: int = attr.ib(validator=[attr.validators.instance_of(int), numeric_validator])
     _value: int = attr.ib(init=False, validator=[attr.validators.instance_of(int), numeric_validator])
 
@@ -166,6 +168,7 @@ class EnumMixin:
 
 
 # Normal fields
+
 
 # TODO: see why slots attribute does not work as expected
 @attr.s(repr=False, slots=True)
@@ -571,6 +574,7 @@ class BitsField(HexMixin, Field):
         """Returns the value of each field part in a tuple."""
         return tuple(part.value for part in self._parts)
 
+    # TODO: see how to simplify this method. Mccabe complexity is 11, the limit defined is 10.
     @value.setter
     def value(self, value: Union[int, Tuple[int, ...]]) -> None:
         if not isinstance(value, (int, tuple)):
